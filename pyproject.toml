@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mesonconfig"
+version = "0.1.0"
+description = "Menuconfig-like Text user Interface for configuring Meson projects."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE.txt"}
+authors = [{name="Stellcel Remeny"}]
+dependencies = [
+    "textual>=0.50.0",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+mesonconfig = "mesonconfig.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Stellcel-Remeny/mesonconfig"
+Issues = "https://github.com/Stellcel-Remeny/mesonconfig/issues"

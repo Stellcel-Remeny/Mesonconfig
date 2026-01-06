@@ -1,0 +1,55 @@
+# =====================
+# Python bytecode
+# =====================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# =====================
+# Packaging / build
+# =====================
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# =====================
+# Virtual environments
+# =====================
+.venv/
+venv/
+ENV/
+env/
+
+# =====================
+# Test / coverage
+# =====================
+.coverage
+.tox/
+.pytest_cache/
+htmlcov/
+
+# =====================
+# Logs
+# =====================
+*.log
+
+# =====================
+# Editor / IDE
+# =====================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =====================
+# Other
+# =====================
+refer/
+
+# =====================
+# OS junk
+# =====================
+.DS_Store
+Thumbs.db
