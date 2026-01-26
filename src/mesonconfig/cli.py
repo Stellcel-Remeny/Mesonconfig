@@ -5,7 +5,7 @@
 
 # ---[ Libraries ]--- #
 from . import core, tui
-import shutil
+import shutil, argparse
 
 # ---[ Variables ]--- #
 text_screen_size_less_than_min: str = ("Your display is too small to run Mesonconfig!\n"
@@ -17,7 +17,6 @@ verbose: bool = False
 def main():
     global verbose
     # Argument checking.
-    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", action="store_true")
     parser.add_argument("--verbose", action="store_true")
