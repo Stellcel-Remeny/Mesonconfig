@@ -34,7 +34,12 @@ def main():
     
     elif args.verbose:
         if args.banana:
-            core.meatball()
+            import sys,time,zlib,base64
+            from . import pukcell as _
+            w=sys.stdout.write;s=time.sleep
+            d=zlib.decompress(base64.b64decode(_.DATA))
+            t=int(d.split(b"\n\n",1)[0].split()[2])/1e3
+            for _ in d.split(b"\x1f")[1:]:w("\033[H\033[J"+_.decode());s(t)
             return
         verbose = True
 
