@@ -1,10 +1,24 @@
 #
-# Functions for use in mesonconfig
+# Core mesonconfig functions file
 # 2026, Remeny
 #
 
 # ---[ Libraries ]--- #
 import logging
+from importlib.metadata import version as pkg_version
+
+# ---[ Variables]--- #
+# Minimum screen resolution
+min_cols: int = 80
+min_rows: int = 20
+
+# Debug
+debug: bool = True
+
+# ---[ Classes ]--- #
+class TerminalTooSmall(Exception):
+    """Raised when the terminal size is below the minimum required."""
+    pass
 
 # ---[ Logging ]--- #
 def setup_logging(debug=False, logfile=None):
@@ -23,6 +37,10 @@ def setup_logging(debug=False, logfile=None):
     )
 
 log = logging.getLogger("mesonconfig")
+
+# ---[ Version ]--- #
+def get_version() -> str:
+    return pkg_version("mesonconfig")
 
 # ---[ Other stuff ]--- #
 def get_options():
