@@ -47,6 +47,7 @@ htmlcov/
 # Other
 # =====================
 refer/
+secrets/
 
 # =====================
 # OS junk
