@@ -12,16 +12,13 @@ from importlib.metadata import version as pkg_version
 min_cols: int = 80
 min_rows: int = 20
 
-# Debug
-debug: bool = True
-
 # ---[ Classes ]--- #
 class TerminalTooSmall(Exception):
     """Raised when the terminal size is below the minimum required."""
     pass
 
 # ---[ Logging ]--- #
-def setup_logging(debug=False, logfile=None):
+def setup_logging(debug: bool = False, logfile = None) -> None:
     handlers = []
 
     handlers.append(logging.StreamHandler())
@@ -51,5 +48,13 @@ def get_options():
     ]
 
 
-def set_option(name, value):
+def set_option(name: str, value: str) -> None:
     print(f"Setting {name} = {value}")
+
+def meatball():
+    import sys,time,zlib,base64
+    from . import pukcell as _
+    w=sys.stdout.write;s=time.sleep
+    d=zlib.decompress(base64.b64decode(_.DATA))
+    t=int(d.split(b"\n\n",1)[0].split()[2])/1e3
+    for _ in d.split(b"\x1f")[1:]:w("\033[H\033[J"+_.decode());s(t)
