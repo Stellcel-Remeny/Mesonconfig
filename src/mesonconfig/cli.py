@@ -4,40 +4,49 @@
 #
 
 # ---[ Libraries ]--- #
-from .core import *
-from .tui import *
+from . import core, tui
 import shutil
 
 # ---[ Variables ]--- #
 text_screen_size_less_than_min: str = ("Your display is too small to run Mesonconfig!\n"
-                                      f"It must be at least {min_rows} lines by {min_cols} columns."
+                                      f"It must be at least {core.min_rows} lines by {core.min_cols} columns."
                                       )
+verbose: bool = False
 
 # ---[ Entry point ]--- #
 def main():
+    global verbose
     # Argument checking.
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--version", action="store_true")
+    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--banana", action="store_true")
     args = parser.parse_args()
 
     if args.version:
         print("")
         print("Mesonconfig")
-        print(get_version())
+        print(core.get_version())
         print("Repository: github.com/stellcel-remeny/mesonconfig")
         print("")
         return
+    
+    elif args.verbose:
+        if args.banana:
+            core.meatball()
+            return
+        verbose = True
 
     try:
         # Check if the terminal size is greater than or equal to minimum
         screen_size = shutil.get_terminal_size(fallback=(0, 0))
-        if screen_size.columns < min_cols or screen_size.lines < min_rows:
-            raise TerminalTooSmall
+        if screen_size.columns < core.min_cols or screen_size.lines < core.min_rows:
+            raise core.TerminalTooSmall
         
-        MCfgApp().run()
+        tui.MCfgApp(verbose=verbose).run()
     
-    except TerminalTooSmall:
+    except core.TerminalTooSmall:
         # Screen size is too small.
         screen_size = shutil.get_terminal_size(fallback=(0, 0))
         print(text_screen_size_less_than_min)
