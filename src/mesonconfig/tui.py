@@ -4,18 +4,21 @@
 #
 
 # ---[ Libraries ]--- #
-from .core import *
+from . import core
 # textual tui libs
 from textual.app import App
+from textual.events import Key
 from textual.widgets import Label
 from textual.containers import Container, Vertical
 
 # ---[ Main TUI Interface ]--- #
 class MCfgApp(App):
     #  --[ On class create ]--  #
-    def __init__(self, **kwargs):
+    def __init__(self, verbose: bool = False, **kwargs):
         super().__init__(**kwargs)
+        self.verbose: bool = verbose
         self._secondary_visible: bool = False
+        self._content_hidden: bool = False
         self._last_status_text: str = ""
     
     #  --[ Widgets ]--  #
@@ -98,7 +101,7 @@ class MCfgApp(App):
         #   True = Equal to or more than minimum size
         #   False = Less than minimum size
         width, height = self.size
-        return width >= min_cols and height >= min_rows
+        return width >= core.min_cols and height >= core.min_rows
     
     def header(self, text: str) -> None:
         # Updates the header label
@@ -112,9 +115,11 @@ class MCfgApp(App):
     
     def hide_main_content(self) -> None:
         self.main_content.add_class("hidden")
+        self._content_hidden = True
         
     def show_main_content(self) -> None:
         self.main_content.remove_class("hidden")
+        self._content_hidden = False
     
     #   -[ Status bar functions ]-   #
     def _show_primary_status(self) -> None:
@@ -141,34 +146,32 @@ class MCfgApp(App):
         self.secondary_status.update(text)
     
     def dbg(self, text: str) -> None:
-        # Only shows if debug is enabled
-        if debug:
+        # Only shows if verbose is enabled
+        if self.verbose:
             self.sstatus(text)
 
     #  --[ Program Logic ]--  #
     # Stuff to happen on program resize
     def on_resize(self):
         self.update_header_separator()
-        
         if not self.check_size():
             self.hide_main_content()
-            self.sstatus(f"Window too small, resize it: Minimum {min_cols}x{min_rows}")
+            self.sstatus(f"Window too small, resize it: Minimum {core.min_cols}x{core.min_rows}")
             return
-        
-        # If the content was previously hidden and only now the user has resized it properly, show all stuff and get old status text
-        self.show_main_content()
-        if self._secondary_visible:
-            self.status(self._last_status_text)
+        elif self._content_hidden:
+            # If the content was previously hidden and only now the user has resized it properly, show all stuff and get old status text
+            self.show_main_content()
+            if self._secondary_visible:
+                self.status(self._last_status_text)
+    
+    # Stuff to happen on user Key press
+    def on_key(self, event: Key) -> None:
+        if event.key.upper() == "Q":
+            self.exit()  # Quit the app
     
     # Stuff to happen on program commence
     def on_mount(self):
         # Program logic here...
-        self.update_header_separator()
-        self.header(f"Mesonconfig {get_version()}")
-        
-        if not self.check_size():
-            self.hide_main_content()
-            self.sstatus(f"Window too small, resize it: Minimum {min_cols}x{min_rows}")
-            return
-        else:
-            self.status("Initializing...")
+        self.header(f"Mesonconfig {core.get_version()}")
+        self.status("Initializing...")
+        self.dbg("DEBUFF")
