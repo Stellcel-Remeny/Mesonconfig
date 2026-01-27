@@ -11,28 +11,21 @@ import shutil, argparse
 text_screen_size_less_than_min: str = ("Your display is too small to run Mesonconfig!\n"
                                       f"It must be at least {core.min_rows} lines by {core.min_cols} columns."
                                       )
-verbose: bool = False
 
 # ---[ Entry point ]--- #
 def main():
-    global verbose
     # Argument checking.
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", action="store_true")
-    parser.add_argument("--verbose", action="store_true")
-    parser.add_argument("--banana", action="store_true")
+    parser.add_argument("--version", action="store_true",
+                        help="Display version information.")
+    parser.add_argument("--verbose", action="store_true",
+                        help="Display verbose status messages.")
+    parser.add_argument("--background", metavar="<color>",
+                        help="Background color for the TUI.")
     args = parser.parse_args()
 
     if args.version:
-        print("")
-        print("Mesonconfig")
-        print(core.get_version())
-        print("Repository: github.com/stellcel-remeny/mesonconfig")
-        print("")
-        return
-    
-    elif args.verbose:
-        if args.banana:
+        if args.verbose:
             import sys,time,zlib,base64
             from . import pukcell as _
             w=sys.stdout.write;s=time.sleep
@@ -40,7 +33,12 @@ def main():
             t=int(d.split(b"\n\n",1)[0].split()[2])/1e3
             for _ in d.split(b"\x1f")[1:]:w("\033[H\033[J"+_.decode());s(t)
             return
-        verbose = True
+        print("")
+        print("Mesonconfig")
+        print(core.get_version())
+        print("Repository: github.com/stellcel-remeny/mesonconfig")
+        print("")
+        return
 
     try:
         # Check if the terminal size is greater than or equal to minimum
@@ -48,7 +46,8 @@ def main():
         if screen_size.columns < core.min_cols or screen_size.lines < core.min_rows:
             raise core.TerminalTooSmall
         
-        tui.MCfgApp(verbose=verbose).run()
+        tui.MCfgApp(background=args.background or "blue",
+                    verbose=args.verbose).run()
     
     except core.TerminalTooSmall:
         # Screen size is too small.

@@ -14,9 +14,10 @@ from textual.containers import Container, Vertical
 # ---[ Main TUI Interface ]--- #
 class MCfgApp(App):
     #  --[ On class create ]--  #
-    def __init__(self, verbose: bool = False, **kwargs):
+    def __init__(self, background: str = "blue", verbose: bool = False, **kwargs):
         super().__init__(**kwargs)
-        self.verbose: bool = verbose
+        self._verbose: bool = verbose
+        self._background = background
         self._secondary_visible: bool = False
         self._content_hidden: bool = False
         self._last_status_text: str = ""
@@ -50,49 +51,51 @@ class MCfgApp(App):
         )
     
     #  --[ Style ]--  #
-    CSS = """    
-    Screen {
-        background: blue;
-        color: cyan;
-    }
+    @property
+    def CSS(self) -> str:
+        return f"""    
+        Screen {{
+            background: {self._background};
+            color: cyan;
+        }}
 
-    #header_label {
-        height: 1;
-        padding-left: 1;
-        content-align: left middle;
-    }
+        #header_label {{
+            height: 1;
+            padding-left: 1;
+            content-align: left middle;
+        }}
 
-    #header_separator {
-        height: 1;
-        color: cyan;
-        padding-left: 1;
-    }
+        #header_separator {{
+            height: 1;
+            color: cyan;
+            padding-left: 1;
+        }}
 
-    #primary_status,
-    #secondary_status {
-        height: 1;
-        width: 100%;
-        padding-left: 1;
-    }
+        #primary_status,
+        #secondary_status {{
+            height: 1;
+            width: 100%;
+            padding-left: 1;
+        }}
 
-    #primary_status {
-        background: lightgray;
-        color: black;
-    }
+        #primary_status {{
+            background: lightgray;
+            color: black;
+        }}
 
-    #secondary_status {
-        background: black;
-        color: lightgreen;
-    }
+        #secondary_status {{
+            background: black;
+            color: lightgreen;
+        }}
 
-    .hidden {
-        display: none;
-    }
-    
-    #main_content.hidden {
-        display: none;
-    }
-    """
+        .hidden {{
+            display: none;
+        }}
+        
+        #main_content.hidden {{
+            display: none;
+        }}
+        """
 
     #  --[ Functions / Helpers ]--  #
     def check_size(self) -> bool:
@@ -147,7 +150,7 @@ class MCfgApp(App):
     
     def dbg(self, text: str) -> None:
         # Only shows if verbose is enabled
-        if self.verbose:
+        if self._verbose:
             self.sstatus(text)
 
     #  --[ Program Logic ]--  #
