@@ -3,6 +3,8 @@
 # 2026, Remeny
 #
 
+# TODO: If .mesonconfig.ini exist, use that for settings (eg. BKGD color, verbose, Default file to use instead of KConfig)
+
 # ---[ Libraries ]--- #
 from . import core, tui
 import shutil, argparse
@@ -16,12 +18,16 @@ text_screen_size_less_than_min: str = ("Your display is too small to run Mesonco
 def main():
     # Argument checking.
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", action="store_true",
-                        help="Display version information.")
-    parser.add_argument("--verbose", action="store_true",
+    parser.add_argument("--background", metavar="<color>", default="#0037DA",
+                        help="Background color for the screen.")
+    parser.add_argument("--window_color", metavar="<color>", default="black",
+                        help="Foreground color for the windows.")
+    parser.add_argument("--window_background", metavar="<color>", default="#CCCCCC",
+                        help="Background color for the windows.")
+    parser.add_argument("--verbose", action="store_true", default=False,
                         help="Display verbose status messages.")
-    parser.add_argument("--background", metavar="<color>",
-                        help="Background color for the TUI.")
+    parser.add_argument("--version", action="store_true", default=False,
+                        help="Display version information.")
     args = parser.parse_args()
 
     if args.version:
@@ -40,13 +46,16 @@ def main():
         print("")
         return
 
+    # Run tui here.
     try:
         # Check if the terminal size is greater than or equal to minimum
         screen_size = shutil.get_terminal_size(fallback=(0, 0))
         if screen_size.columns < core.min_cols or screen_size.lines < core.min_rows:
             raise core.TerminalTooSmall
         
-        tui.MCfgApp(background=args.background or "blue",
+        tui.MCfgApp(background=args.background.lower(),
+                    window_color=args.window_color.lower(),
+                    window_background=args.window_background.lower(),
                     verbose=args.verbose).run()
     
     except core.TerminalTooSmall:
