@@ -3,6 +3,7 @@
 # 2026, Remeny
 #
 
+# ---[ CSS ]--- #
 def app_css(background: str, window_bg: str, window_fg: str) -> str:
     return f"""
     Screen {{

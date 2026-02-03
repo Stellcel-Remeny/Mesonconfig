@@ -3,10 +3,12 @@
 # 2026, Remeny
 #
 
+# ---[ Libraries ]--- #
 from textual.widgets import Label
 from textual.containers import Container, Vertical
 from mesonconfig.tui.widgets.menu import MenuDisplay
 
+# ---[ Build Main Layout ]--- #
 def build_main_layout(app):    
     # Header (What to display at the Top-left corner)
     app.header_label = Label("", id="header_label")

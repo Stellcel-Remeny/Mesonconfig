@@ -3,10 +3,13 @@
 # 2026, Remeny
 #
 
+# ---[ Libraries ]--- #
 from textual.events import Key
 from mesonconfig import core
 
+# ---[ Lifecycle Handlers ]--- #
 class LifecycleHandlers:
+    # Stuff to happen on program resize
     def on_resize(self):
         self.update_header_separator()
         if not self.check_size():
@@ -16,16 +19,19 @@ class LifecycleHandlers:
             )
             return
 
+        # If the content was previously hidden and only now the user has resized it properly, show all stuff and get old status text
         if self._content_hidden:
             self.show_main_content()
             if self._secondary_visible:
                 self.set_status(self._last_status_text)
 
+    # Stuff to happen on user Key press
     def on_key(self, event: Key):
-        if event.key.upper() == "Q":
+        if event.key.upper() == "Q": # Quit key
             self.exit()
 
     def on_mount(self):
+        # Program logic here...
         self.header(f"Mesonconfig {core.get_version()}")
         self.set_status("Initializing...")
         self.dbg("Debug text will show in this color scheme, right down here.")

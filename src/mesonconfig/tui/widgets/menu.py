@@ -9,6 +9,7 @@
 # textual tui libs
 from textual.widgets import Label, ListView, ListItem, Static
 
+# ---[ Widgets ]--- #
 class MenuDisplay(Static):
     """Displays a scrollable Menu interface."""
     
