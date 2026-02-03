@@ -6,7 +6,8 @@
 # TODO: If .mesonconfig.ini exist, use that for settings (eg. BKGD color, verbose, Default file to use instead of KConfig)
 
 # ---[ Libraries ]--- #
-from . import core, tui
+from mesonconfig.tui import app as tui
+from mesonconfig import core
 import shutil, argparse
 
 # ---[ Variables ]--- #
