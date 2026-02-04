@@ -4,7 +4,6 @@
 #
 
 # ---[ Libraries ]--- #
-from mesonconfig import core
 from mesonconfig.tui.css import app_css
 from mesonconfig.tui.layout.main_layout import build_main_layout
 from mesonconfig.tui.status.status_mixin import StatusMixin
