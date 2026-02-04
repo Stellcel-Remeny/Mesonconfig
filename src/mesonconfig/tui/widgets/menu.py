@@ -8,6 +8,7 @@
 # ---[ Libraries ]--- #
 # textual tui libs
 from textual.widgets import Label, ListView, ListItem, Static
+from textual.containers import Container, Horizontal
 
 # ---[ Widgets ]--- #
 class MenuDisplay(Static):
@@ -21,9 +22,15 @@ class MenuDisplay(Static):
 
     def compose(self):
         yield Static(self.description, classes="menu-description")
-        yield ListView(
-            *[ListItem(Label(item), id=item) for item in self.items],
-            classes="menu-list",
+        yield Container(
+            Horizontal(
+                ListView(
+                    *[ListItem(Label(item), id=item) for item in self.items],
+                    classes="menu-list",
+                ),
+                classes="menu-list-wrapper",
+            ),
+            classes="menu-frame",
         )
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:

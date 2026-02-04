@@ -55,18 +55,45 @@ def app_css(background: str, window_bg: str, window_fg: str) -> str:
         color: {window_fg};
         border: solid {window_fg};
         border-title-align: center;
-        padding-top: 0;
-        padding-left: 2;
-        padding-right: 1;
         margin: 0 3 1 2;
     }}
 
-    ListView .list-item--highlighted {{
-        background: white;
-        color: black;
+    .menu-description {{
+        padding-left: 2;
+        padding-right: 1;
     }}
 
-    ListView .list-item--highlighted Label {{
-        color: black;
+    ListView {{
+        background: transparent;
+        padding-left: 0;
+        width: 100%;
+    }}
+    
+    ListView ListItem Label {{
+        content-align: center middle;
+        width: 100%;
+    }}
+    
+    .menu-frame {{
+        border: solid {window_fg};
+        margin: 0 1 2 1;
+        padding-left: 4;
+        padding-right: 4;
+        height: 1fr;
+    }}
+
+    .menu-list-wrapper {{
+        width: 100%;
+        align-horizontal: center;
+    }}
+
+    .menu-list {{
+        width: 50%;
+        background: transparent;
+    }}
+
+    .menu-list ListItem Label {{
+        width: 100%;
+        content-align: left top;
     }}
     """
