@@ -9,17 +9,17 @@ class StatusMixin:
         # Show primary, hide secondary
         self.secondary_status.add_class("hidden")
         self.primary_status.remove_class("hidden")
-        self._secondary_visible = False
+        self.state.secondary_visible = False
 
     def _show_secondary_status(self):
         # Show secondary, hide primary
         self.primary_status.add_class("hidden")
         self.secondary_status.remove_class("hidden")
-        self._secondary_visible = True
+        self.state.secondary_visible = True
 
     def set_status(self, text: str):
         # Updates the primary status bar
-        self._last_status_text = text
+        self.state.last_status_text = text
         self._show_primary_status()
         self.primary_status.update(text)
 
@@ -30,5 +30,5 @@ class StatusMixin:
 
     def dbg(self, text: str):
         # Only shows if verbose is enabled
-        if self._verbose:
+        if self.config.verbose:
             self.set_secondary_status(text)

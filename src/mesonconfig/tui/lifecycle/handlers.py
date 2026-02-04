@@ -20,10 +20,10 @@ class LifecycleHandlers:
             return
 
         # If the content was previously hidden and only now the user has resized it properly, show all stuff and get old status text
-        if self._content_hidden:
+        if self.state.content_hidden:
             self.show_main_content()
-            if self._secondary_visible:
-                self.set_status(self._last_status_text)
+            if self.state.secondary_visible:
+                self.set_status(self.state.last_status_text)
 
     # Stuff to happen on user Key press
     def on_key(self, event: Key):

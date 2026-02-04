@@ -10,9 +10,10 @@ from mesonconfig.tui.layout.main_layout import build_main_layout
 from mesonconfig.tui.status.status_mixin import StatusMixin
 from mesonconfig.tui.chrome.window_mixin import WindowChromeMixin
 from mesonconfig.tui.lifecycle.handlers import LifecycleHandlers
+from mesonconfig.tui.state import UIState
+from mesonconfig.tui.config import AppConfig
 # textual tui libs
 from textual.app import App
-from textual.events import Key
 
 # ---[ Main TUI Interface ]--- #
 class MCfgApp(
@@ -31,22 +32,21 @@ class MCfgApp(
         **kwargs
     ):
         super().__init__(**kwargs)
-        self._background: str = background
-        self._verbose: bool = verbose
-        self._window_color: str = window_color
-        self._window_background: str = window_background
-        
-        self._content_hidden: bool = False
-        self._secondary_visible: bool = False
-        self._last_status_text: str = ""
+        self.config = AppConfig(
+            background=background,
+            verbose=verbose,
+            window_color=window_color,
+            window_background=window_background
+        )
+        self.state = UIState()
     
     #  --[ Style ]--  #
     @property
     def CSS(self) -> str:
         return app_css(
-            background=self._background,
-            window_bg=self._window_background,
-            window_fg=self._window_color
+            background=self.config.background,
+            window_bg=self.config.window_background,
+            window_fg=self.config.window_color
         )
 
     #  --[ Commit widgets ]--  #

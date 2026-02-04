@@ -3,7 +3,7 @@
 # 2026, Remeny
 #
 
-# TODO: Make MenuDisplay and other windows 3D (fake borders, shadow)
+# TODO: Make MenuDisplay and other windows 3D (shadow)
 
 # ---[ Libraries ]--- #
 # textual tui libs
