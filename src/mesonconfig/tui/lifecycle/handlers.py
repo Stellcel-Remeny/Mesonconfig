@@ -12,7 +12,7 @@ class LifecycleHandlers:
     # Stuff to happen on program resize
     def on_resize(self):
         self.update_header_separator()
-        if not self.check_size():
+        if not self.check_size() and not self.config.disable_minimum_size_check:
             self.hide_main_content()
             self.set_secondary_status(
                 f"Window too small, resize it: Minimum {core.min_cols}x{core.min_rows}"

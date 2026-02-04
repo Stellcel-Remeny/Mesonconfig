@@ -10,21 +10,21 @@ from mesonconfig.tui import app as tui
 from mesonconfig import core
 import shutil, argparse
 
-# ---[ Variables ]--- #
-text_screen_size_less_than_min: str = ("Your display is too small to run Mesonconfig!\n"
-                                      f"It must be at least {core.min_rows} lines by {core.min_cols} columns."
-                                      )
-
 # ---[ Entry point ]--- #
 def main():
     # Argument checking.
     parser = argparse.ArgumentParser()
     parser.add_argument("--background", metavar="<color>", default="#0037DA",
                         help="Background color for the screen.")
+    
     parser.add_argument("--window_color", metavar="<color>", default="black",
                         help="Foreground color for the windows.")
     parser.add_argument("--window_background", metavar="<color>", default="#CCCCCC",
                         help="Background color for the windows.")
+    
+    parser.add_argument("--override-minimum-size", action="store_true", default=False,
+                        help="Disables the terminal minimum size check.")
+    
     parser.add_argument("--verbose", action="store_true", default=False,
                         help="Display verbose status messages.")
     parser.add_argument("--version", action="store_true", default=False,
@@ -51,19 +51,23 @@ def main():
     try:
         # Check if the terminal size is greater than or equal to minimum
         screen_size = shutil.get_terminal_size(fallback=(0, 0))
-        if screen_size.columns < core.min_cols or screen_size.lines < core.min_rows:
+        if (screen_size.columns < core.min_cols or screen_size.lines < core.min_rows) and not args.override_minimum_size:
             raise core.TerminalTooSmall
         
         tui.MCfgApp(background=args.background.lower(),
                     window_color=args.window_color.lower(),
                     window_background=args.window_background.lower(),
+                    disable_minimum_size_check=args.override_minimum_size,
                     verbose=args.verbose).run()
     
     except core.TerminalTooSmall:
         # Screen size is too small.
         screen_size = shutil.get_terminal_size(fallback=(0, 0))
-        print(text_screen_size_less_than_min)
-        print(f"Current size: {screen_size.columns}x{screen_size.lines}")
+        print(f"\nYour display is too small to run Mesonconfig!\n"
+              f"It must be at least {core.min_rows} lines by {core.min_cols} columns.\n"
+              f"Current size: {screen_size.columns}x{screen_size.lines}\n"
+              f"(use --override-minimum-size to bypass)\n"
+        )
     
     except Exception as e:
         import traceback

@@ -9,6 +9,9 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class AppConfig:
     background: str = "blue"
-    verbose: bool = False
     window_color: str = "black"
     window_background: str = "lightgrey"
+    
+    disable_minimum_size_check: bool = False
+    
+    verbose: bool = False

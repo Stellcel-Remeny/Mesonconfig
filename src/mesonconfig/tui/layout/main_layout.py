@@ -27,7 +27,7 @@ def build_main_layout(app):
                     "  Highlighted letters are hotkeys.  Pressing <Y> includes, <N> excludes, <M> modularizes features."
                     "  Press <Esc><Esc> to exit, <?> for Help, </> for Search."
                     "  Legend: [*] built-in  [ ] excluded  <M> module  < > module capable"),
-            items=["tempo", "cheetah", "ah"]
+            items=["tempo", "cheetah", "ah", "yolo", "yt"]
         ),
         id="main_content",
     )

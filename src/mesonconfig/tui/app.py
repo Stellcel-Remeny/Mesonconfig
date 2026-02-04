@@ -25,17 +25,19 @@ class MCfgApp(
     def __init__(
         self,
         background: str = "blue",
-        verbose: bool = False,
         window_color: str = "black",
         window_background: str = "lightgrey",
+        disable_minimum_size_check: bool = False,
+        verbose: bool = False,
         **kwargs
     ):
         super().__init__(**kwargs)
         self.config = AppConfig(
             background=background,
-            verbose=verbose,
             window_color=window_color,
-            window_background=window_background
+            window_background=window_background,
+            disable_minimum_size_check=disable_minimum_size_check,
+            verbose=verbose,
         )
         self.state = UIState()
     
