@@ -24,7 +24,7 @@ class WindowChromeMixin:
         # Redraws header separator
         width = self.size.width
         if width > 1:
-            self.header_separator.update("─" * (width - 1))
+            self.header_separator.update("─" * (width - 2))
 
     def hide_main_content(self):
         self.main_content.add_class("hidden")
