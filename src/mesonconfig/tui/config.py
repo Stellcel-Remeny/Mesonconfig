@@ -8,10 +8,14 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class AppConfig:
-    background: str = "blue"
-    window_color: str = "black"
-    window_background: str = "lightgrey"
+    background: str
+    window_border: str
+    window_color: str
+    window_background: str
     
-    disable_minimum_size_check: bool = False
+    disable_minimum_size_check: bool
     
-    verbose: bool = False
+    verbose: bool
+    
+    kconfig_file: str
+    output_file: str

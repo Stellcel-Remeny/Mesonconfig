@@ -4,7 +4,12 @@
 #
 
 # ---[ CSS ]--- #
-def app_css(background: str, window_bg: str, window_fg: str) -> str:
+def app_css(
+    background: str,
+    window_border: str,
+    window_bg: str,
+    window_fg: str
+) -> str:
     return f"""
     Screen {{
         background: {background};
@@ -31,8 +36,8 @@ def app_css(background: str, window_bg: str, window_fg: str) -> str:
     }}
 
     #primary_status {{
-        background: lightgray;
-        color: black;
+        background: {window_bg};
+        color: {window_fg};
     }}
 
     #secondary_status {{
@@ -53,7 +58,7 @@ def app_css(background: str, window_bg: str, window_fg: str) -> str:
         width: 100%;
         background: {window_bg};
         color: {window_fg};
-        border: solid {window_fg};
+        border: {window_border} {window_fg};
         border-title-align: center;
         margin: 0 3 1 2;
     }}
@@ -75,7 +80,7 @@ def app_css(background: str, window_bg: str, window_fg: str) -> str:
     }}
     
     .menu-frame {{
-        border: solid {window_fg};
+        border: {window_border} {window_fg};
         margin: 0 1 2 1;
         padding-left: 4;
         padding-right: 4;

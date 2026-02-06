@@ -24,21 +24,15 @@ class MCfgApp(
     #  --[ On class create ]--  #
     def __init__(
         self,
-        background: str = "blue",
-        window_color: str = "black",
-        window_background: str = "lightgrey",
-        disable_minimum_size_check: bool = False,
-        verbose: bool = False,
+        config: AppConfig = None,
         **kwargs
     ):
         super().__init__(**kwargs)
-        self.config = AppConfig(
-            background=background,
-            window_color=window_color,
-            window_background=window_background,
-            disable_minimum_size_check=disable_minimum_size_check,
-            verbose=verbose,
-        )
+        if not isinstance(config, AppConfig):
+            raise TypeError(
+                f"config must be an AppConfig, got {type(config).__name__}"
+            )
+        self.config: AppConfig = config
         self.state = UIState()
     
     #  --[ Style ]--  #
@@ -46,6 +40,7 @@ class MCfgApp(
     def CSS(self) -> str:
         return app_css(
             background=self.config.background,
+            window_border=self.config.window_border,
             window_bg=self.config.window_background,
             window_fg=self.config.window_color
         )
