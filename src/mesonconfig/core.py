@@ -13,9 +13,6 @@ min_cols: int = 80
 min_rows: int = 20
 
 # ---[ Classes ]--- #
-class TerminalTooSmall(Exception):
-    """Raised when the terminal size is below the minimum required."""
-    pass
 
 # ---[ Logging ]--- #
 def setup_logging(debug: bool = False, logfile = None) -> None:

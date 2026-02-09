@@ -9,6 +9,7 @@
 from mesonconfig.tui import app as tui
 from mesonconfig.tui import config as tui_config
 from mesonconfig import core
+from pathlib import Path
 import shutil, argparse
 
 # ---[ Entry point ]--- #
@@ -55,7 +56,14 @@ def main():
         "--override-minimum-size", action="store_true", default=False,
         help="Disables the terminal minimum size check."
     )
-    runtime.add_argument(
+    
+    # --- Debug --- #
+    debug = parser.add_argument_group("Debug")
+    debug.add_argument(
+        "--dump-kconfig", action="store_true", default=False,
+        help="Dumps parsed KConfig file onto the terminal and exits."
+    )
+    debug.add_argument(
         "--verbose", action="store_true", default=False,
         help="Display verbose status messages."
     )
@@ -68,6 +76,50 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # --- Version flag check --- #
+    if args.version:
+        if args.verbose:
+            import sys,time,zlib,base64
+            from . import pukcell as _
+            w=sys.stdout.write;s=time.sleep
+            d=zlib.decompress(base64.b64decode(_.DATA))
+            t=int(d.split(b"\n\n",1)[0].split()[2])/1e3
+            for _ in d.split(b"\x1f")[1:]:w("\033[H\033[J"+_.decode());s(t)
+            return
+        print("")
+        print("Mesonconfig")
+        print(core.get_version())
+        print("Repository: github.com/stellcel-remeny/mesonconfig")
+        print("")        
+        return
+
+    # --- Conditions before TUI --- #
+    if not Path(args.kconfig_file).is_file():
+        print(f"\nThe file '{args.kconfig_file}' does not exist.\n"
+              f"Please create '{args.kconfig_file}', or supply correct path to\n"
+              f"the KConfig file by using --kconfig-file\n"
+             )
+        return 1
+    
+
+    # --- Other immediate argument checks --- #
+    # Check if dumping kconfig is enabled
+    if args.dump_kconfig:
+        from mesonconfig import kconfig
+        kc = kconfig.KConfig(args.kconfig_file)
+        kc.dump()
+        return
+    
+    # Check if the terminal size is too small
+    screen_size = shutil.get_terminal_size(fallback=(0, 0))
+    if (screen_size.columns < core.min_cols or screen_size.lines < core.min_rows) and not args.override_minimum_size:
+        print(f"\nYour display is too small to run Mesonconfig!\n"
+            f"It must be at least {core.min_rows} lines by {core.min_cols} columns.\n"
+            f"Current size: {screen_size.columns}x{screen_size.lines}\n"
+            f"(use --override-minimum-size to bypass)\n"
+        )
+        return 1
 
     # Build config object for the app.
     config = tui_config.AppConfig(
@@ -83,40 +135,10 @@ def main():
         output_file=args.output_file
     )
 
-    if args.version:
-        if args.verbose:
-            import sys,time,zlib,base64
-            from . import pukcell as _
-            w=sys.stdout.write;s=time.sleep
-            d=zlib.decompress(base64.b64decode(_.DATA))
-            t=int(d.split(b"\n\n",1)[0].split()[2])/1e3
-            for _ in d.split(b"\x1f")[1:]:w("\033[H\033[J"+_.decode());s(t)
-            return
-        print("")
-        print("Mesonconfig")
-        print(core.get_version())
-        print("Repository: github.com/stellcel-remeny/mesonconfig")
-        print("")
-        return
-
     # Run tui here.
-    try:
-        # Check if the terminal size is greater than or equal to minimum
-        screen_size = shutil.get_terminal_size(fallback=(0, 0))
-        if (screen_size.columns < core.min_cols or screen_size.lines < core.min_rows) and not args.override_minimum_size:
-            raise core.TerminalTooSmall
-        
+    try:        
         tui.MCfgApp(config=config).run()
-    
-    except core.TerminalTooSmall:
-        # Screen size is too small.
-        screen_size = shutil.get_terminal_size(fallback=(0, 0))
-        print(f"\nYour display is too small to run Mesonconfig!\n"
-              f"It must be at least {core.min_rows} lines by {core.min_cols} columns.\n"
-              f"Current size: {screen_size.columns}x{screen_size.lines}\n"
-              f"(use --override-minimum-size to bypass)\n"
-        )
-    
+     
     except Exception as e:
         import traceback
         print("Oops; An UNexpected error! :(")
