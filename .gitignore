@@ -27,8 +27,10 @@ env/
 # =====================
 .coverage
 .tox/
+.tmp.kconfig.dbg
 .pytest_cache/
 htmlcov/
+Config.in
 
 # =====================
 # Logs

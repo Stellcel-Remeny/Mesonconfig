@@ -60,8 +60,8 @@ def main():
     # --- Debug --- #
     debug = parser.add_argument_group("Debug")
     debug.add_argument(
-        "--dump-kconfig", action="store_true", default=False,
-        help="Dumps parsed KConfig file onto the terminal and exits."
+        "--demo-kconfig", action="store_true", default=False,
+        help="KConfig demo test (MarkedRain KConfig needed)."
     )
     debug.add_argument(
         "--verbose", action="store_true", default=False,
@@ -104,11 +104,39 @@ def main():
     
 
     # --- Other immediate argument checks --- #
-    # Check if dumping kconfig is enabled
-    if args.dump_kconfig:
+    # Check if kconfig demo is enabled
+    if args.demo_kconfig:
         from mesonconfig import kconfig
         kc = kconfig.KConfig(args.kconfig_file)
         kc.dump()
+        print("===========")
+        print("Extra stuff")
+        print("Main menu:", kc.mainmenu)
+        print("Example stuff (bool_show_cmd)")
+        opt = kc.find_option("bool_show_cmd")
+        print("Name:", opt.name)
+        print("Type:", opt.opt_type)
+        print("Default:", opt.default)
+        print("Value:", opt.value)
+        print("Help:\n", opt.help)
+        print("===========")
+        print("Now producing an edited file (.tmp.kconfig.dbg)")
+        print("Result should be bool_show_cmd=y SRC=\"mysource\" and val_grub-boot_timeout=10")
+        kc.set_option("bool_show_cmd", "y")
+        kc.set_option("SRC", "\"mysource\"")
+        kc.set_option("val_grub-boot_timeout", "10")
+        kc.save_config(".tmp.kconfig.dbg")
+        print("+++++++++")
+        print("That's that. Now opening menu.")
+        kconfig.dbg_disp_menu_mockup(kc, kc)
+        print("\n++++\nDependency visibility:\n")
+        opt = kc.find_option("sys_dir_newroot_etc")
+        print("Sys_dir_newroot_etc depends on:", opt.depends_on)
+        opt = kc.find_option("bool_move_root")
+        print("Visible:", kc.is_visible(opt))
+        kc.set_option("bool_move_root", "n")
+        nested = kc.find_option("sys_dir_newroot_etc")
+        print("Visible after disabling:", kc.is_visible(nested))
         return
     
     # Check if the terminal size is too small
