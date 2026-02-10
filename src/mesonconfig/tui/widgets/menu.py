@@ -38,3 +38,5 @@ class MenuDisplay(Static):
 
     def on_mount(self):
         self.border_title = f"[bold]{self.title}[/bold]"
+
+    #def update_items(self, )

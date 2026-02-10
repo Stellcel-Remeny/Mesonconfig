@@ -168,8 +168,7 @@ def main():
         opt_bool = kc.find_option("bool_move_root")
         print("bool_move_root visible (own depends only):", kc.is_visible(opt_bool))
 
-        print("sys_dir_newroot_etc visible (no parent passed):", kc.is_visible(opt))
-        print("sys_dir_newroot_etc visible (with parent's depends):", kc.is_visible(opt, parent_dep))
+        print("sys_dir_newroot_etc visible:", kc.is_visible(opt))
         
         print("\n++++\nNew Organized Checks\n")
 
@@ -180,9 +179,7 @@ def main():
             print("  value:", opt.value)
             print("  own depends:", opt.depends_on)
             print("  parent depends:", parent)
-            print("  visible (own only):", kc.is_visible(opt))
-            print("  visible (with parent):", kc.is_visible(opt, parent))
-            print("  effectively visible:", kc.is_effectively_visible(opt))
+            print("  visible:", kc.is_visible(opt))
 
         # Core tests
         dump_visibility("hide_this_funct")

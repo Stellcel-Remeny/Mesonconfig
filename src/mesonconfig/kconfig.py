@@ -369,7 +369,7 @@ class KConfig:
             opt = self._options_index.get(name)
             if not opt:
                 return False
-            return bool(opt.value) and self.is_visible(opt)
+            return bool(opt.value)
 
         # Grammar:
         # expr    := or_expr
@@ -426,10 +426,7 @@ class KConfig:
 
         return bool(result)
 
-    def find_option(self, name: str) -> Optional[KOption]:
-        return self._options_index.get(name)
-
-    def is_visible(self, opt: KOption, parent_depends: Optional[str] = None) -> bool:
+    def _is_visible_local(self, opt: KOption, parent_depends: Optional[str] = None) -> bool:
         exprs = []
 
         if parent_depends:
@@ -443,6 +440,37 @@ class KConfig:
 
         return self._eval_depends(" and ".join(exprs))
     
+    def find_option(self, name: str) -> Optional[KOption]:
+        return self._options_index.get(name)
+    
+    def is_visible(self, opt: KOption) -> bool:
+        """
+        Return True if the option would actually appear in the UI.
+        """
+        def walk(entries, parent_depends=None):
+            for e in entries:
+                if e is opt:
+                    return self._is_visible_local(opt, parent_depends)
+
+                if isinstance(e, KMenu):
+                    combined = e.depends_on
+                    if parent_depends and combined:
+                        combined = f"{parent_depends} and {combined}"
+                    elif parent_depends:
+                        combined = parent_depends
+
+                    if combined is None or self._eval_depends(combined):
+                        res = walk(e.entries, combined)
+                        if res is not None:
+                            return res
+                elif isinstance(e, KChoice):
+                    res = walk(e.entries, parent_depends)
+                    if res is not None:
+                        return res
+            return None
+
+        return bool(walk(self.entries))
+        
     def get_option_parents(self, opt_name: str) -> Optional[str]:
         """
         Walk the tree and return the combined parent/menu `depends_on` expression
@@ -473,7 +501,7 @@ class KConfig:
 
         for e in entries:
             if isinstance(e, KOption):
-                if self.is_visible(e, parent_depends):
+                if self._is_visible_local(e, parent_depends):
                     visible.append(e)
 
             elif isinstance(e, KMenu):
@@ -565,23 +593,3 @@ class KConfig:
 
             elif isinstance(e, KComment):
                 print(f"{indent}# {e.text}")
-
-    def is_effectively_visible(self, opt: KOption) -> bool:
-        def walk(entries, parent_depends=None):
-            for e in entries:
-                if e is opt:
-                    return self.is_visible(opt, parent_depends)
-
-                if isinstance(e, KMenu):
-                    combined = e.depends_on
-                    if parent_depends and combined:
-                        combined = f"{parent_depends} and {combined}"
-                    elif parent_depends:
-                        combined = parent_depends
-
-                    found = walk(e.entries, combined)
-                    if found is not None:
-                        return found
-            return None
-
-        return bool(walk(self.entries))
