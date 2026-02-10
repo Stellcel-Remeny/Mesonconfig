@@ -8,9 +8,36 @@
 # ---[ Libraries ]--- #
 from mesonconfig.tui import app as tui
 from mesonconfig.tui import config as tui_config
+from mesonconfig import kconfig
 from mesonconfig import core
 from pathlib import Path
 import shutil, argparse
+
+# ---[ Functions ]--- #
+### Debug ###
+def _debug_display_menu_mockup(menu, kc, depth=0):
+    indent = "  " * depth
+
+    for entry in kc.get_visible_entries(menu.entries):
+        if isinstance(entry, kconfig.KMenu):
+            print(f"{indent}[+] {entry.title}")
+            _debug_display_menu_mockup(entry, kc, depth + 1)
+
+        elif isinstance(entry, kconfig.KChoice):
+            print(f"{indent}( ) choice")
+            for opt in entry.entries:
+                state = "*" if opt.value else " "
+                print(f"{indent}  ({state}) {opt.prompt}")
+
+        elif isinstance(entry, kconfig.KOption):
+            if entry.opt_type == "bool":
+                state = "[X]" if entry.value else "[ ]"
+                print(f"{indent}{state} {entry.prompt}")
+            else:
+                print(f"{indent}{entry.prompt}: {entry.value}")
+
+        elif isinstance(entry, kconfig.KComment):
+            print(f"{indent}# {entry.text}")
 
 # ---[ Entry point ]--- #
 def main():
@@ -106,7 +133,6 @@ def main():
     # --- Other immediate argument checks --- #
     # Check if kconfig demo is enabled
     if args.demo_kconfig:
-        from mesonconfig import kconfig
         kc = kconfig.KConfig(args.kconfig_file)
         kc.dump()
         print("===========")
@@ -119,24 +145,51 @@ def main():
         print("Default:", opt.default)
         print("Value:", opt.value)
         print("Help:\n", opt.help)
+        
         print("===========")
         print("Now producing an edited file (.tmp.kconfig.dbg)")
         print("Result should be bool_show_cmd=y SRC=\"mysource\" and val_grub-boot_timeout=10")
         kc.set_option("bool_show_cmd", "y")
         kc.set_option("SRC", "\"mysource\"")
         kc.set_option("val_grub-boot_timeout", "10")
+        kc.set_option("hide_this_funct", "n")
         kc.save_config(".tmp.kconfig.dbg")
+        
         print("+++++++++")
         print("That's that. Now opening menu.")
-        kconfig.dbg_disp_menu_mockup(kc, kc)
+        _debug_display_menu_mockup(kc, kc)
+        
         print("\n++++\nDependency visibility:\n")
         opt = kc.find_option("sys_dir_newroot_etc")
-        print("Sys_dir_newroot_etc depends on:", opt.depends_on)
-        opt = kc.find_option("bool_move_root")
-        print("Visible:", kc.is_visible(opt))
-        kc.set_option("bool_move_root", "n")
-        nested = kc.find_option("sys_dir_newroot_etc")
-        print("Visible after disabling:", kc.is_visible(nested))
+        print("Sys_dir_newroot_etc depends on (own):", opt.depends_on)
+        parent_dep = kc.get_option_parents("sys_dir_newroot_etc")
+        print("Sys_dir_newroot_etc effective parent depends:", parent_dep)
+
+        opt_bool = kc.find_option("bool_move_root")
+        print("bool_move_root visible (own depends only):", kc.is_visible(opt_bool))
+
+        print("sys_dir_newroot_etc visible (no parent passed):", kc.is_visible(opt))
+        print("sys_dir_newroot_etc visible (with parent's depends):", kc.is_visible(opt, parent_dep))
+        
+        print("\n++++\nNew Organized Checks\n")
+
+        def dump_visibility(opt_name):
+            opt = kc.find_option(opt_name)
+            parent = kc.get_option_parents(opt_name)
+            print(f"Option: {opt_name}")
+            print("  value:", opt.value)
+            print("  own depends:", opt.depends_on)
+            print("  parent depends:", parent)
+            print("  visible (own only):", kc.is_visible(opt))
+            print("  visible (with parent):", kc.is_visible(opt, parent))
+            print("  effectively visible:", kc.is_effectively_visible(opt))
+
+        # Core tests
+        dump_visibility("hide_this_funct")
+        dump_visibility("bool_move_root")
+        dump_visibility("sys_dir_newroot_etc")
+        dump_visibility("sys_dir_apps")
+        dump_visibility("bool_show_cmd_out_err")
         return
     
     # Check if the terminal size is too small
