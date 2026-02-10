@@ -3,13 +3,31 @@
 # 2026, Remeny
 #
 
-# TODO: Fix 'depends_on' issue (with nested menus)
+"""
+Grammar:
+
+mainmenu ::= 'mainmenu' STRING
+menu     ::= 'menu' STRING entries 'endmenu'
+choice   ::= 'choice' entries 'endchoice'
+entries  ::= (menu | choice | config | comment)*
+config   ::= 'config' NAME type [default] [depends] [help]
+source   ::= 'source' STRING
+"""
 
 # ---[ Libraries ]--- #
 from dataclasses import dataclass, field
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
+from enum import Enum, auto
+from pathlib import Path
 
 # ---[ Classes ]--- #
+class ParseContext(Enum):
+    ROOT = auto()
+    MENU = auto()
+    CHOICE = auto()
+    OPTION = auto()
+
+# ---[ Dataclasses ]--- #
 @dataclass
 class KEntry:
     pass
@@ -17,9 +35,9 @@ class KEntry:
 @dataclass
 class KOption(KEntry):
     name: str
-    opt_type: str
+    opt_type: Literal["bool", "int", "string"]
     prompt: Optional[str] = None
-    default: Optional[str] = None
+    default: Optional[Union[bool, int, str]] = None
     depends_on: Optional[str] = None
     help: str = ""
 
@@ -45,19 +63,17 @@ class KComment(KEntry):
     text: str
 
 class KConfig:
-    def __init__(self, path: str):
+    def __init__(self, path: str) -> None:
         self.path = path
         self.mainmenu: Optional[str] = None
         self.entries: list[KEntry] = []
         self._options_index: dict[str, KOption] = {}
 
-        self._parse_file(path)
+        self._build_tree(path)
+        self._validate_tree()
         self._apply_defaults()
 
-    def find_option(self, name: str) -> Optional[KOption]:
-        return self._options_index.get(name)
-
-    def _normalize_value(self, opt: KOption, raw: str):
+    def _normalize_value(self, opt: KOption, raw: str) -> Union[bool, int, str]:
         raw = raw.strip()
 
         if opt.opt_type == "bool":
@@ -71,20 +87,24 @@ class KConfig:
 
         return raw
 
-    def _parse_file(self, path: str) -> None:
+    def _build_tree(self, path: str) -> None:
         with open(path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         # Stack holds where new entries go
         stack: list[list[KEntry]] = [self.entries]
+        context_stack: list[ParseContext] = [ParseContext.ROOT]
 
         current_option: Optional[KOption] = None
         current_choice: Optional[KChoice] = None
+        current_menu: Optional[KMenu] = None
+
+        base_dir = Path(path).parent
 
         in_help = False
         help_indent = 0
 
-        for raw in lines:
+        for lineno, raw in enumerate(lines, 1):
             line = raw.rstrip("\n")
 
             if not line.strip():
@@ -101,48 +121,158 @@ class KConfig:
                 else:
                     in_help = False
 
+            # If we're inside an option but the current line is not an option-field,
+            # then close the option context proactively.
+            # (This avoids an OPTION remaining on the context_stack when we hit endmenu.)
+            if current_option:
+                # lines that belong to an option
+                option_prefixes = ("bool ", "string ", "int ", "default ", "depends on", "help")
+                if not stripped.startswith(option_prefixes):
+                    # close option context
+                    current_option = None
+                    if context_stack and context_stack[-1] == ParseContext.OPTION:
+                        context_stack.pop()
+
             # ---- mainmenu ----
             if stripped.startswith("mainmenu"):
+                if self.mainmenu is not None:
+                    raise SyntaxError(
+                        f"Line {lineno}: Duplicate 'mainmenu'\n"
+                        f"  >> {line}\n"
+                        f"Expected: config | menu | comment"
+                    )
+                
                 self.mainmenu = stripped.split('"', 1)[1].rsplit('"', 1)[0]
                 continue
 
             # ---- menu ----
             if stripped.startswith("menu "):
+                if context_stack[-1] not in (ParseContext.ROOT, ParseContext.MENU):
+                    raise SyntaxError(
+                        f"Line {lineno}: unexpected 'menu'\n"
+                        f"  >> {line}\n"
+                        f"Expected: config | comment"
+                    )
+
                 title = stripped.split('"', 1)[1].rsplit('"', 1)[0]
                 menu = KMenu(title=title)
                 stack[-1].append(menu)
                 stack.append(menu.entries)
+                context_stack.append(ParseContext.MENU)
+                current_option = None
+                current_menu = menu
                 continue
 
             if stripped == "endmenu":
+                # If we have an open OPTION context, close it first.
+                while context_stack and context_stack[-1] == ParseContext.OPTION:
+                    context_stack.pop()
+                    current_option = None
+
+                if context_stack[-1] != ParseContext.MENU:
+                    raise SyntaxError(
+                        f"Line {lineno}: unexpected 'endmenu'\n"
+                        f"  >> {line}\n"
+                        f"Expected: config | menu | comment"
+                    )
                 stack.pop()
+                context_stack.pop()
+
+                # also clear choice state if any (defensive)
+                current_choice = None
+                current_option = None
+                current_menu = None
                 continue
 
             # ---- choice ----
             if stripped == "choice":
+                if context_stack[-1] != ParseContext.MENU:
+                    raise SyntaxError(f"Line {lineno}: nested 'choice' is not allowed")
+
                 current_choice = KChoice()
                 stack[-1].append(current_choice)
                 stack.append(current_choice.entries)
+                context_stack.append(ParseContext.CHOICE)
+                current_option = None
                 continue
 
             if stripped == "endchoice":
-                stack.pop()
-                current_choice = None
-                continue
+                # Close any open OPTION context first
+                while context_stack and context_stack[-1] == ParseContext.OPTION:
+                    context_stack.pop()
+                    current_option = None
 
+                if context_stack[-1] != ParseContext.CHOICE:
+                    raise SyntaxError(
+                        f"Line {lineno}: unexpected 'endchoice'\n"
+                        f"  >> {line}\n"
+                        f"Expected: config | menu | comment"
+                    )
+                stack.pop()
+                context_stack.pop()
+
+                current_choice = None
+                current_option = None
+                continue
+            
             # ---- comment ----
             if stripped.startswith("comment"):
+                current_option = None
                 text = stripped.split(" ", 1)[1].strip('"')
                 stack[-1].append(KComment(text=text))
                 continue
 
+            # ---- source ----
+            if stripped.startswith("source "):
+                raw = stripped.split(" ", 1)[1].strip().strip('"')
+
+                # no variable expansion yet — keep it simple
+                src_path = base_dir / raw
+
+                if not src_path.is_file():
+                    raise FileNotFoundError(f"source file not found: {src_path}")
+
+                # recursively parse source file
+                sub_kc = KConfig(str(src_path))
+
+                # merge entries
+                stack[-1].extend(sub_kc.entries)
+
+                # merge option index (detect duplicates)
+                for name, opt in sub_kc._options_index.items():
+                    if name in self._options_index:
+                        raise ValueError(f"Duplicate option from source(): {name}")
+                    self._options_index[name] = opt
+
+                continue
+
             # ---- config ----
             if stripped.startswith("config "):
+                # leave OPTION context if already in one
+                if context_stack[-1] == ParseContext.OPTION:
+                    context_stack.pop()
+
                 name = stripped.split()[1]
-                current_option = KOption(name=name, opt_type="")
+                current_option = KOption(name=name, opt_type="bool")  # temporary
                 stack[-1].append(current_option)
                 self._options_index[name] = current_option
+
+                context_stack.append(ParseContext.OPTION)
                 continue
+
+            # ---- depends ----
+            if stripped.startswith("depends on"):
+                if current_option:
+                    current_option.depends_on = stripped.split("on", 1)[1].strip()
+                    continue
+
+                if current_menu:
+                    current_menu.depends_on = stripped.split("on", 1)[1].strip()
+                    continue
+
+                if current_choice:
+                    current_choice.depends_on = stripped.split("on", 1)[1].strip()
+                    continue
 
             # ---- option fields ----
             if current_option:
@@ -151,9 +281,18 @@ class KConfig:
                     current_option.opt_type = typ
                     current_option.prompt = rest.strip('"')
                     continue
+                
+                # after handling type lines
+                if stripped.startswith("config ") and current_option and current_option.prompt is None:
+                    raise SyntaxError(
+                        f"Line {lineno}: Config '{current_option.name} is missing type'\n"
+                        f"  >> {line}\n"
+                        f"Expected: bool | string | int"
+                    )
 
                 if stripped.startswith("default "):
-                    current_option.default = stripped.split(" ", 1)[1]
+                    raw = stripped.split(" ", 1)[1]
+                    current_option.default = self._normalize_value(current_option, raw)
                     continue
 
                 if stripped.startswith("depends on"):
@@ -166,33 +305,206 @@ class KConfig:
                     current_option.help = ""
                     continue
 
-    def _apply_defaults(self):
+    def _apply_defaults(self) -> None:
+        """Apply parsed defaults into option.value so visibility can use them."""
         for opt in self._options_index.values():
             if opt.default is not None:
-                opt.value = self._normalize_value(opt, opt.default)
+                # default was already normalized during parsing
+                opt.value = opt.default
+
+    def _validate_tree(self) -> None:
+        seen: set[str] = set()
+
+        def walk(entries: list[KEntry]) -> None:
+            for e in entries:
+                if isinstance(e, KOption):
+                    # ---- name uniqueness ----
+                    if e.name in seen:
+                        raise ValueError(f"Duplicate option '{e.name}'")
+                    seen.add(e.name)
+
+                    # ---- required fields ----
+                    if e.prompt is None:
+                        raise ValueError(f"Option '{e.name}' missing prompt")
+                    if e.opt_type not in ("bool", "int", "string"):
+                        raise ValueError(f"Option '{e.name}' has invalid type")
+
+                    # ---- depends_on validation ----
+                    if e.depends_on:
+                        for tok in e.depends_on.replace("&&", " ").replace("||", " ").split():
+                            if tok.isidentifier() and tok not in self._options_index:
+                                raise ValueError(
+                                    f"Option '{e.name}' depends on unknown option '{tok}'"
+                                )
+
+                elif isinstance(e, KChoice):
+                    if not e.entries:
+                        raise ValueError("Choice block must contain at least one entry")
+                    walk(e.entries)
+
+                elif isinstance(e, KMenu):
+                    if e.depends_on:
+                        for tok in e.depends_on.replace("&&", " ").replace("||", " ").split():
+                            if tok.isidentifier() and tok not in self._options_index:
+                                raise ValueError(
+                                    f"Menu '{e.title}' depends on unknown option '{tok}'"
+                                )
+                    walk(e.entries)
+
+        walk(self.entries)
 
     def _eval_depends(self, expr: str) -> bool:
-        tokens = expr.replace("&&", " and ").replace("||", " or ").replace("!", " not ").split()
+        # --- Tokenizer ---
+        expr = (
+            expr.replace("&&", " and ")
+                .replace("||", " or ")
+                .replace("!", " ! ")
+                .replace("(", " ( ")
+                .replace(")", " ) ")
+        )
+        tokens = expr.split()
+        pos = 0
 
-        resolved = []
-        for tok in tokens:
-            if tok.isidentifier():
-                opt = self._options_index.get(tok)
-                resolved.append(str(bool(opt and opt.value)))
-            else:
-                resolved.append(tok)
+        def resolve(name: str) -> bool:
+            opt = self._options_index.get(name)
+            if not opt:
+                return False
+            return bool(opt.value) and self.is_visible(opt)
 
-        try:
-            return bool(eval(" ".join(resolved)))
-        except Exception:
-            return False
+        # Grammar:
+        # expr    := or_expr
+        # or_expr := and_expr ("or" and_expr)*
+        # and_expr:= not_expr ("and" not_expr)*
+        # not_expr:= "!" not_expr | atom
+        # atom    := IDENT | "(" expr ")"
 
-    def is_visible(self, opt: KOption) -> bool:
-        if not opt.depends_on:
+        def parse_expr():
+            return parse_or()
+
+        def parse_or():
+            nonlocal pos
+            val = parse_and()
+            while pos < len(tokens) and tokens[pos] == "or":
+                pos += 1
+                val = val or parse_and()
+            return val
+
+        def parse_and():
+            nonlocal pos
+            val = parse_not()
+            while pos < len(tokens) and tokens[pos] == "and":
+                pos += 1
+                val = val and parse_not()
+            return val
+
+        def parse_not():
+            nonlocal pos
+            if tokens[pos] == "!":
+                pos += 1
+                return not parse_not()
+            return parse_atom()
+
+        def parse_atom():
+            nonlocal pos
+            tok = tokens[pos]
+
+            if tok == "(":
+                pos += 1
+                val = parse_expr()
+                if pos >= len(tokens) or tokens[pos] != ")":
+                    raise ValueError("Unmatched '(' in depends_on")
+                pos += 1
+                return val
+
+            pos += 1
+            return resolve(tok)
+
+        result = parse_expr()
+
+        if pos != len(tokens):
+            raise ValueError(f"Unexpected token in depends_on: {tokens[pos]}")
+
+        return bool(result)
+
+    def find_option(self, name: str) -> Optional[KOption]:
+        return self._options_index.get(name)
+
+    def is_visible(self, opt: KOption, parent_depends: Optional[str] = None) -> bool:
+        exprs = []
+
+        if parent_depends:
+            exprs.append(parent_depends)
+
+        if opt.depends_on:
+            exprs.append(opt.depends_on)
+
+        if not exprs:
             return True
-        return self._eval_depends(opt.depends_on)
+
+        return self._eval_depends(" and ".join(exprs))
     
-    def load_config(self, path: str):
+    def get_option_parents(self, opt_name: str) -> Optional[str]:
+        """
+        Walk the tree and return the combined parent/menu `depends_on` expression
+        that applies to the option. Returns None if no parent depends exist.
+        """
+        def walk(entries: list[KEntry], acc: Optional[str]) -> Optional[str]:
+            for e in entries:
+                if isinstance(e, KOption):
+                    if e.name == opt_name:
+                        return acc
+                elif isinstance(e, KMenu) or isinstance(e, KChoice):
+                    # accumulate depends: parent AND this entry's depends
+                    new_acc = acc
+                    if e.depends_on:
+                        new_acc = e.depends_on if new_acc is None else f"{new_acc} and {e.depends_on}"
+                    res = walk(e.entries, new_acc)
+                    if res is not None:
+                        return res
+            return None
+
+        return walk(self.entries, None)
+    
+    def get_visible_entries(self, entries=None, parent_depends=None):
+        if entries is None:
+            entries = self.entries
+
+        visible = []
+
+        for e in entries:
+            if isinstance(e, KOption):
+                if self.is_visible(e, parent_depends):
+                    visible.append(e)
+
+            elif isinstance(e, KMenu):
+                # compute combined depends for this menu (parent_depends may apply)
+                combined = e.depends_on
+                if parent_depends and combined:
+                    combined = f"{parent_depends} and {combined}"
+                elif parent_depends:
+                    combined = parent_depends
+
+                # if the menu has a depends expression, evaluate it and only
+                # include the menu + children when visible
+                if combined is None or self._eval_depends(combined):
+                    visible.append(e)
+                    visible.extend(self.get_visible_entries(e.entries, combined))
+                else:
+                    # menu is hidden; do not append it nor recurse its children
+                    continue
+
+            elif isinstance(e, KChoice):
+                visible.append(e)
+                visible.extend(
+                    self.get_visible_entries(e.entries, parent_depends)
+                )
+
+            elif isinstance(e, KComment):
+                visible.append(e)
+
+        return visible
+    
+    def load_config(self, path: str) -> None:
         with open(path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
@@ -209,7 +521,7 @@ class KConfig:
 
                 opt.value = self._normalize_value(opt, raw)
 
-    def save_config(self, path: str):
+    def save_config(self, path: str) -> None:
         with open(path, "w", encoding="utf-8") as f:
             for name, opt in sorted(self._options_index.items()):
                 if opt.value is None:
@@ -224,27 +536,7 @@ class KConfig:
 
                 f.write(f"{name}={val}\n")
 
-    def get_visible_entries(self, entries=None):
-        entries = entries or self.entries
-
-        visible = []
-        for e in entries:
-            if isinstance(e, KOption):
-                if self.is_visible(e):
-                    visible.append(e)
-
-            elif isinstance(e, KMenu):
-                visible.append(e)
-
-            elif isinstance(e, KChoice):
-                visible.append(e)
-
-            elif isinstance(e, KComment):
-                visible.append(e)
-
-        return visible
-
-    def set_option(self, name: str, value):
+    def set_option(self, name: str, value) -> None:
         opt = self._options_index.get(name)
         if not opt:
             raise KeyError(name)
@@ -253,8 +545,9 @@ class KConfig:
 
 
     # ---[ Test ]--- #
-    def dump(self, entries=None, depth=0):
-        entries = entries or self.entries
+    def dump(self, entries=None, depth=0) -> None:
+        if entries is None:
+            entries = self.entries
 
         for e in entries:
             indent = "  " * depth
@@ -273,28 +566,22 @@ class KConfig:
             elif isinstance(e, KComment):
                 print(f"{indent}# {e.text}")
 
-# ---[ Functions ]--- #
-#   Test   #
-def dbg_disp_menu_mockup(menu, kc, depth=0):
-    indent = "  " * depth
+    def is_effectively_visible(self, opt: KOption) -> bool:
+        def walk(entries, parent_depends=None):
+            for e in entries:
+                if e is opt:
+                    return self.is_visible(opt, parent_depends)
 
-    for entry in kc.get_visible_entries(menu.entries):
-        if isinstance(entry, KMenu):
-            print(f"{indent}[+] {entry.title}")
-            dbg_disp_menu_mockup(entry, kc, depth + 1)
+                if isinstance(e, KMenu):
+                    combined = e.depends_on
+                    if parent_depends and combined:
+                        combined = f"{parent_depends} and {combined}"
+                    elif parent_depends:
+                        combined = parent_depends
 
-        elif isinstance(entry, KChoice):
-            print(f"{indent}( ) choice")
-            for opt in entry.entries:
-                state = "*" if opt.value else " "
-                print(f"{indent}  ({state}) {opt.prompt}")
+                    found = walk(e.entries, combined)
+                    if found is not None:
+                        return found
+            return None
 
-        elif isinstance(entry, KOption):
-            if entry.opt_type == "bool":
-                state = "[X]" if entry.value else "[ ]"
-                print(f"{indent}{state} {entry.prompt}")
-            else:
-                print(f"{indent}{entry.prompt}: {entry.value}")
-
-        elif isinstance(entry, KComment):
-            print(f"{indent}# {entry.text}")
+        return bool(walk(self.entries))
