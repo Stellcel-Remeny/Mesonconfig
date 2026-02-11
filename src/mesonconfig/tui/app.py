@@ -69,7 +69,7 @@ class MCfgApp(
                     "  Highlighted letters are hotkeys.  Pressing <Y> includes, <N> excludes, <M> modularizes features."
                     "  Press <Esc><Esc> to exit, <?> for Help, </> for Search."
                     "  Legend: [*] built-in  [ ] excluded  <M> module  < > module capable"),
-            items=["tempo", "cheetah", "ah", "yolo", "yt"]
+            items=["Hello", "If you", "see this,", "that means", "something has", "gone wrong..."]
         )
 
         self.main_content = Vertical(
