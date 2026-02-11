@@ -27,7 +27,7 @@ class LifecycleHandlers:
 
     # Stuff to happen on user Key press
     def on_key(self, event: Key):
-        if event.key.upper() == "Q": # Quit key
+        if event.key.upper() == "Q" and self.config.verbose: # Quit key
             self.exit()
 
     def on_mount(self):
