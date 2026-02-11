@@ -81,7 +81,7 @@ def app_css(
     
     .menu-frame {{
         border: {window_border} {window_fg};
-        margin: 0 1 2 1;
+        margin: 0 1 0 1;
         padding-left: 4;
         padding-right: 4;
         height: 1fr;
@@ -100,5 +100,24 @@ def app_css(
     .menu-list ListItem Label {{
         width: 100%;
         content-align: left top;
+    }}
+    
+    #control_bar {{
+        height: 1;
+        align-horizontal: center;
+    }}
+
+    #control_bar Button {{
+        min-width: 0;
+        width: auto;
+        padding: 0;
+        margin: 0 2;
+        border: none;
+        background: transparent;
+        color: {window_fg};
+    }}
+    
+    #control_bar Button:focus {{
+
     }}
     """
