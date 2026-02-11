@@ -31,7 +31,10 @@ class MenuDisplay(Static):
         yield Static(self.description, classes="menu-description")
         
         self.list_view = ListView(
-            *[ListItem(Label(item), id=item) for item in self.items],
+            *[
+                ListItem(Label(item), id=f"item_{i}")
+                for i, item in enumerate(self.items)
+            ],
             id="menu_list",
             classes="menu-list",
         )
@@ -58,7 +61,9 @@ class MenuDisplay(Static):
             yield self.control_bar
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        self.app.dbg(f"Selected: {event.item.id}")
+        index = int(event.item.id.split("_")[1])
+        value = self.items[index]
+        self.app.dbg(f"Selected: {value}")
 
     def on_mount(self):
         self.border_title = f"[bold]{self.title}[/bold]"
