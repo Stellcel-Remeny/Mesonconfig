@@ -4,6 +4,7 @@
 #
 
 # TODO: If .mesonconfig.ini exist, use that for settings (eg. BKGD color, verbose, Default file to use instead of KConfig)
+# TODO: Add functionality for --build-meson-options flag
 
 # ---[ Libraries ]--- #
 from mesonconfig.tui import app as tui
@@ -50,12 +51,16 @@ def main():
     # --- I/O options ---
     io = parser.add_argument_group("Configuration")
     io.add_argument(
+        "--build-meson-options", action="store_true", default=False,
+        help="Generate a meson_options.txt file from the provided KConfig file."
+    )
+    io.add_argument(
         "--kconfig-file", metavar="<file>", default="KConfig",
         help="Path to the KConfig file to load."
     )
     io.add_argument(
         "--output-file", metavar="<file>", default="local.conf",
-        help="Path to the output file to generate."
+        help="Path to the output file to generate Local configuration."
     )
 
     # --- Appearance options --- #
@@ -127,6 +132,11 @@ def main():
               f"Please create '{args.kconfig_file}', or supply correct path to\n"
               f"the KConfig file by using --kconfig-file\n"
              )
+        return 1
+    elif args.build_meson_options:
+        # TODO: Add functionality...
+        print(f"\nBuilding file 'meson_options.txt' using configuration from file '{args.kconfig_file}'...\n")
+        print("!! Functionality not implemented yet as of this version !!\n")
         return 1
     
 
