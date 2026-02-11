@@ -100,6 +100,11 @@ def app_css(
     .menu-list ListItem Label {{
         width: 100%;
         content-align: left top;
+        color: {window_fg};
+    }}
+    
+    .menu-list ListItem.-highlight Label {{
+        color: white;
     }}
     
     #control_bar {{
