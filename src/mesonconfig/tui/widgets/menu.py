@@ -65,7 +65,8 @@ class MenuDisplay(Static):
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         index = self.list_view.index
         value = self.items[index]
-        self.app.dbg(f"Selected: {value}")
+        self.app.dbg(f"Selected: {value} Index: {index}")
+        self.app.handle_menu_selection(index)
 
     def on_mount(self):
         self.border_title = f"[bold]{self.title}[/bold]"
@@ -112,7 +113,7 @@ class MenuDisplay(Static):
 
         self.list_view.clear()
         self.list_view.extend(
-            ListItem(Label(item), id=item)
+            ListItem(Label(item))
             for item in items
         )
         

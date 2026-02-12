@@ -11,10 +11,11 @@ from mesonconfig.tui.lifecycle.handlers import LifecycleHandlers
 from mesonconfig.tui.state import UIState
 from mesonconfig.tui.config import AppConfig
 from mesonconfig.tui.widgets.menu import MenuDisplay
+from mesonconfig.kconfig import KConfig, KMenu, KOption, KComment
 # textual tui libs
 from textual.app import App
-from textual.widgets import Label, Button
-from textual.containers import Container, Vertical, Horizontal
+from textual.widgets import Label
+from textual.containers import Container, Vertical
 
 # ---[ Main TUI Interface ]--- #
 class MCfgApp(
@@ -35,6 +36,11 @@ class MCfgApp(
                 f"config must be an AppConfig, got {type(config).__name__}"
             )
         self.config: AppConfig = config
+        self.kconfig = KConfig(self.config.kconfig_file)
+        
+        # navigation stack
+        self.menu_stack = []  # holds KMenu objects
+        
         self.state = UIState()
     
     #  --[ Style ]--  #
@@ -49,7 +55,7 @@ class MCfgApp(
 
     #  --[ On class mount ]--  #
     def on_mount(self) -> None:
-        self.main_list.update_items(['Hi', 'John', 'Appleseed', 'Bananaseed'])
+        self.render_entries()
 
     #  --[ Commit widgets ]--  #
     def compose(self):
@@ -87,3 +93,40 @@ class MCfgApp(
             self.primary_status,
             self.secondary_status,
         )
+
+    #  --[ Functions ]--  #
+    def get_current_entries(self):
+        if not self.menu_stack:
+            return self.kconfig.get_visible_entries()
+
+        current_menu = self.menu_stack[-1]
+        return self.kconfig.get_visible_entries(current_menu.entries)
+
+    def render_entries(self):
+        entries = self.get_current_entries()
+
+        display_items = []
+
+        for e in entries:
+            if isinstance(e, KMenu):
+                display_items.append(f"> {e.title}")
+            elif isinstance(e, KOption):
+                val = "[*]" if e.value else "[ ]"
+                display_items.append(f"{val} {e.prompt}")
+            elif isinstance(e, KComment):
+                display_items.append(f"# {e.text}")
+
+        self.main_list.update_items(display_items)
+
+    def handle_menu_selection(self, index: int):
+        entries = self.get_current_entries()
+        entry = entries[index]
+
+        if isinstance(entry, KMenu):
+            self.menu_stack.append(entry)
+            self.render_entries()
+
+        elif isinstance(entry, KOption):
+            if entry.opt_type == "bool":
+                entry.value = not bool(entry.value)
+                self.render_entries()
