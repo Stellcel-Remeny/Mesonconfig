@@ -40,12 +40,80 @@ def _debug_display_menu_mockup(menu, kc, depth=0):
         elif isinstance(entry, kconfig.KComment):
             print(f"{indent}# {entry.text}")
 
+def kconfig_demo_funct(kconfig_file: str) -> None:
+    kc = kconfig.KConfig(kconfig_file)
+    kc.dump()
+    print("===========")
+    print("Extra stuff")
+    print("Main menu:", kc.mainmenu)
+    print("Example stuff (bool_show_cmd)")
+    opt = kc.find_option("bool_show_cmd")
+    print("Name:", opt.name)
+    print("Type:", opt.opt_type)
+    print("Default:", opt.default)
+    print("Value:", opt.value)
+    print("Help:\n", opt.help)
+    
+    print("===========")
+    print("Now producing an edited file (.tmp.kconfig.dbg)")
+    print("Result should be bool_show_cmd=y SRC=\"mysource\" and val_grub-boot_timeout=10")
+    kc.set_option("bool_show_cmd", "y")
+    kc.set_option("SRC", "\"mysource\"")
+    kc.set_option("val_grub-boot_timeout", "10")
+    kc.set_option("hide_this_funct", "n")
+    kc.save_config(".tmp.kconfig.dbg")
+    
+    print("+++++++++")
+    print("That's that. Now opening menu.")
+    _debug_display_menu_mockup(kc, kc)
+    
+    print("\n++++\nDependency visibility:\n")
+    opt = kc.find_option("sys_dir_newroot_etc")
+    print("Sys_dir_newroot_etc depends on (own):", opt.depends_on)
+    parent_dep = kc.get_option_parents("sys_dir_newroot_etc")
+    print("Sys_dir_newroot_etc effective parent depends:", parent_dep)
+
+    opt_bool = kc.find_option("bool_move_root")
+    print("bool_move_root visible (own depends only):", kc.is_visible(opt_bool))
+
+    print("sys_dir_newroot_etc visible:", kc.is_visible(opt))
+    
+    print("\n++++\nNew Organized Checks\n")
+
+    def dump_visibility(opt_name):
+        opt = kc.find_option(opt_name)
+        parent = kc.get_option_parents(opt_name)
+        print(f"Option: {opt_name}")
+        print("  value:", opt.value)
+        print("  own depends:", opt.depends_on)
+        print("  parent depends:", parent)
+        print("  visible:", kc.is_visible(opt))
+
+    # Core tests
+    dump_visibility("hide_this_funct")
+    dump_visibility("bool_move_root")
+    dump_visibility("sys_dir_newroot_etc")
+    dump_visibility("sys_dir_apps")
+    dump_visibility("bool_show_cmd_out_err")
+
+#  --[ Custom help messages ]--  #
+def custom_help(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    if args.verbose:
+        print("\nVerbosity makes the following changes:\n\n"
+                "   - Enables secondary status bar (dbg() function messages)\n"
+                "   - Use Q to quit TUI app\n"
+             )
+    else:
+        parser.print_help()
+        print(f"\n For more information on a flag, use --help with that flag. (not available for every flag)")
+
 # ---[ Entry point ]--- #
 def main():
     # Argument checking.
     parser = argparse.ArgumentParser(
         prog="mesonconfig",
-        description="Configuration Utility for Meson projects"
+        description="Configuration Utility for Meson projects",
+        add_help=False
     )
 
     # --- I/O options ---
@@ -106,12 +174,17 @@ def main():
         "--version", action="store_true", default=False,
         help="Display version information."
     )
+    meta.add_argument(
+        "-h", "--help",
+        action="store_true",
+        help="Show this help message and exit."
+    )
 
     args = parser.parse_args()
 
     # --- Version flag check --- #
     if args.version:
-        if args.verbose:
+        if args.verbose and args.help:
             import sys,time,zlib,base64
             from . import pukcell as _
             w=sys.stdout.write;s=time.sleep
@@ -124,6 +197,11 @@ def main():
         print(core.get_version())
         print("Repository: github.com/stellcel-remeny/mesonconfig")
         print("")        
+        return
+
+    # --- Custom help messages --- #
+    if args.help:
+        custom_help(parser, args)
         return
 
     # --- Conditions before TUI --- #
@@ -143,60 +221,7 @@ def main():
     # --- Other immediate argument checks --- #
     # Check if kconfig demo is enabled
     if args.demo_kconfig:
-        kc = kconfig.KConfig(args.kconfig_file)
-        kc.dump()
-        print("===========")
-        print("Extra stuff")
-        print("Main menu:", kc.mainmenu)
-        print("Example stuff (bool_show_cmd)")
-        opt = kc.find_option("bool_show_cmd")
-        print("Name:", opt.name)
-        print("Type:", opt.opt_type)
-        print("Default:", opt.default)
-        print("Value:", opt.value)
-        print("Help:\n", opt.help)
-        
-        print("===========")
-        print("Now producing an edited file (.tmp.kconfig.dbg)")
-        print("Result should be bool_show_cmd=y SRC=\"mysource\" and val_grub-boot_timeout=10")
-        kc.set_option("bool_show_cmd", "y")
-        kc.set_option("SRC", "\"mysource\"")
-        kc.set_option("val_grub-boot_timeout", "10")
-        kc.set_option("hide_this_funct", "n")
-        kc.save_config(".tmp.kconfig.dbg")
-        
-        print("+++++++++")
-        print("That's that. Now opening menu.")
-        _debug_display_menu_mockup(kc, kc)
-        
-        print("\n++++\nDependency visibility:\n")
-        opt = kc.find_option("sys_dir_newroot_etc")
-        print("Sys_dir_newroot_etc depends on (own):", opt.depends_on)
-        parent_dep = kc.get_option_parents("sys_dir_newroot_etc")
-        print("Sys_dir_newroot_etc effective parent depends:", parent_dep)
-
-        opt_bool = kc.find_option("bool_move_root")
-        print("bool_move_root visible (own depends only):", kc.is_visible(opt_bool))
-
-        print("sys_dir_newroot_etc visible:", kc.is_visible(opt))
-        
-        print("\n++++\nNew Organized Checks\n")
-
-        def dump_visibility(opt_name):
-            opt = kc.find_option(opt_name)
-            parent = kc.get_option_parents(opt_name)
-            print(f"Option: {opt_name}")
-            print("  value:", opt.value)
-            print("  own depends:", opt.depends_on)
-            print("  parent depends:", parent)
-            print("  visible:", kc.is_visible(opt))
-
-        # Core tests
-        dump_visibility("hide_this_funct")
-        dump_visibility("bool_move_root")
-        dump_visibility("sys_dir_newroot_etc")
-        dump_visibility("sys_dir_apps")
-        dump_visibility("bool_show_cmd_out_err")
+        kconfig_demo_funct(args.kconfig_file)
         return
     
     # Check if the terminal size is too small
