@@ -49,12 +49,19 @@ class MenuDisplay(Static):
             classes="menu-frame",
         )
 
+        #  --[ Control bar ]--  #
+        btn_select = Button("<Select>", id="btn_select")
+        btn_exit = Button("< Exit >", id="btn_exit")
+        btn_help = Button("< Help >", id="btn_help")
+        btn_save = Button("< Save >", id="btn_save")
+        btn_load = Button("< Load >", id="btn_load")
+
         self.control_bar = Horizontal(
-            Button("<Select>", id="btn_select"),
-            Button("< Exit >", id="btn_exit"),
-            Button("< Help >", id="btn_help"),
-            Button("< Save >", id="btn_save"),
-            Button("< Load >", id="btn_load"),
+            btn_select,
+            btn_exit,
+            btn_help,
+            btn_save,
+            btn_load,
             id="control_bar",
         )
         
@@ -71,13 +78,13 @@ class MenuDisplay(Static):
     def on_mount(self):
         self.border_title = f"[bold]{self.title}[/bold]"
         self.update_items(self.items)
+        self.list_view.focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
 
         if button_id == "btn_exit":
-            # TODO: Add a Quit screen
-            self.app.exit()
+            self.app.action_escape_key()
 
         elif button_id == "btn_select":
             self.handle_select()
@@ -105,17 +112,22 @@ class MenuDisplay(Static):
         self.app.dbg("Load pressed")
 
     def update_items(self, items: list[str]) -> None:
-        """Replace the items in the ListView."""
         self.items = items
-        
-        if not self.is_mounted:
-            return  # wait until mounted
 
-        self.list_view.clear()
-        self.list_view.extend(
-            ListItem(Label(item))
-            for item in items
-        )
+        if not self.is_mounted:
+            return
+
+        # Resize if needed
+        while len(self.list_view.children) < len(items):
+            self.list_view.append(ListItem(Label("")))
+
+        while len(self.list_view.children) > len(items):
+            self.list_view.children[-1].remove()
+
+        # Update text only
+        for list_item, text in zip(self.list_view.children, items):
+            label = list_item.query_one(Label)
+            label.update(text)
         
     def set_controls_visible(self, visible: bool) -> None:
         self.show_controls = visible
