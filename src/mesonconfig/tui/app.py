@@ -8,8 +8,7 @@ from mesonconfig.tui.css import app_css
 from mesonconfig.tui.status.status_mixin import StatusMixin
 from mesonconfig.tui.chrome.window_mixin import WindowChromeMixin
 from mesonconfig.tui.lifecycle.handlers import LifecycleHandlers
-from mesonconfig.tui.state import UIState
-from mesonconfig.tui.config import AppConfig
+from mesonconfig.tui.config import AppConfig, UIState
 from mesonconfig.tui.widgets.menu import MenuDisplay
 from mesonconfig.kconfig import KConfig, KMenu, KOption, KComment
 # textual tui libs
@@ -24,6 +23,16 @@ class MCfgApp(
     WindowChromeMixin,
     LifecycleHandlers
 ):
+    #  --[ Key bindings ]--  #
+    BINDINGS = [
+        ("up", "cursor_up", ""),
+        ("down", "cursor_down", ""),
+        ("left", "control_left", ""),
+        ("right", "control_right", ""),
+        ("space", "activate", ""),
+        ("escape", "escape_key", ""),
+    ]
+
     #  --[ On class create ]--  #
     def __init__(
         self,
@@ -42,6 +51,9 @@ class MCfgApp(
         self.menu_stack = []  # holds KMenu objects
         
         self.state = UIState()
+        self._esc_timer = None
+        self._focus_mode = "list"
+        self._control_index = 0
     
     #  --[ Style ]--  #
     @property
@@ -55,6 +67,7 @@ class MCfgApp(
 
     #  --[ On class mount ]--  #
     def on_mount(self) -> None:
+        super().on_mount()
         self.render_entries()
 
     #  --[ Commit widgets ]--  #
@@ -94,33 +107,136 @@ class MCfgApp(
             self.secondary_status,
         )
 
+    #  --[ Key methods ]--  #
+    def action_cursor_up(self):
+        self._focus_mode = "list"
+        self.main_list.list_view.focus()
+        self.main_list.list_view.action_cursor_up()
+
+    def action_cursor_down(self):
+        self._focus_mode = "list"
+        self.main_list.list_view.focus()
+        self.main_list.list_view.action_cursor_down()
+
+    def action_control_left(self):
+        if self._focus_mode == "list":
+            self._focus_mode = "controls"
+            self._control_index = len(self.main_list.control_bar.children) - 1
+            self._focus_control()
+        else:
+            self._control_index = (self._control_index - 1) % len(self.main_list.control_bar.children)
+            self._focus_control()
+
+    def action_control_right(self):
+        if self._focus_mode == "list":
+            self._focus_mode = "controls"
+            self._control_index = 0
+            self._focus_control()
+        else:
+            self._control_index = (self._control_index + 1) % len(self.main_list.control_bar.children)
+            self._focus_control()
+
+    def action_activate(self):
+        if self._focus_mode == "list":
+            index = self.main_list.list_view.index
+            self.handle_menu_selection(index)
+        elif self._focus_mode == "controls":
+            self.main_list.control_bar.children[self._control_index].press()
+
+    def action_space(self):
+        if self._focus_mode == "list":
+            index = self.main_list.list_view.index
+            entry = self.current_entries[index]
+            if isinstance(entry, KOption):
+                if entry.opt_type == "bool":
+                    entry.value = not entry.value
+                    self.render_entries()
+                    # Keep focus on current item
+                    self.main_list.list_view.index = index
+
+    def action_escape_key(self):
+        if self.menu_stack:
+            self.menu_stack.pop()
+            self._focus_mode = "list"
+            self._control_index = 0
+            self.render_entries()
+            self.set_status(self._get_status_path())
+            if self._esc_timer:
+                self._esc_timer.stop()
+                self._esc_timer = None
+            return
+
+        # At root
+        if self._esc_timer is None:
+            self.set_status("Press ESC again to exit")
+            self._esc_timer = self.set_timer(1.0, self._reset_esc)
+        else:
+            self.exit()
+
     #  --[ Functions ]--  #
+    def _get_status_path(self):
+        if not self.menu_stack:
+            return self.kconfig.mainmenu
+        path = " > ".join([m.title for m in self.menu_stack])
+        return f"> {path}"
+
+    def _reset_esc(self):
+        self._esc_timer = None
+        self.set_status("")
+
+    def _focus_control(self):
+        buttons = self.main_list.control_bar.children
+        btn = buttons[self._control_index]
+        btn.focus()
+
     def get_current_entries(self):
         if not self.menu_stack:
             return self.kconfig.get_visible_entries()
 
         current_menu = self.menu_stack[-1]
-        return self.kconfig.get_visible_entries(current_menu.entries)
+        entries = self.kconfig.get_visible_entries(current_menu.entries)
+        # fallback to parent if empty (prevents hang)
+        if not entries and len(self.menu_stack) > 1:
+            current_menu = self.menu_stack[-2]
+            entries = self.kconfig.get_visible_entries(current_menu.entries)
+        return entries
 
     def render_entries(self):
-        entries = self.get_current_entries()
-
+        self.current_entries = self.get_current_entries()
         display_items = []
-
-        for e in entries:
+        for e in self.current_entries:
             if isinstance(e, KMenu):
-                display_items.append(f"> {e.title}")
+                display_items.append(f"{e.title}  --->")
             elif isinstance(e, KOption):
-                val = "[*]" if e.value else "[ ]"
-                display_items.append(f"{val} {e.prompt}")
+                if e.opt_type == "bool":
+                    val = "[*]" if e.value else "[ ]"
+                    display_items.append(f"{val} {e.prompt}")
+                elif e.opt_type == "string":
+                    display_items.append(f"({e.value or ''}) {e.prompt}")
+                elif e.opt_type == "int":
+                    display_items.append(f"({e.value or 0}) {e.prompt}")
             elif isinstance(e, KComment):
                 display_items.append(f"# {e.text}")
 
+        prev_index = getattr(self.main_list.list_view, "index", 0)
         self.main_list.update_items(display_items)
+        if display_items:
+            self.main_list.list_view.index = min(prev_index, len(display_items)-1)
+            
+        # Update title
+        title = self.menu_stack[-1].title if self.menu_stack else self.kconfig.mainmenu
+        self.main_list.border_title = f"[bold]{title}[/bold]"
+        # Update status bar
+        self.set_status(self._get_status_path())
 
     def handle_menu_selection(self, index: int):
-        entries = self.get_current_entries()
-        entry = entries[index]
+        if not self.current_entries:
+            return
+
+        if index >= len(self.current_entries):
+            return
+
+        entry = self.current_entries[index]
 
         if isinstance(entry, KMenu):
             self.menu_stack.append(entry)
