@@ -354,29 +354,19 @@ class KConfig:
         walk(self.entries)
 
     def _eval_depends(self, expr: str) -> bool:
-        # --- Tokenizer ---
-        expr = (
-            expr.replace("&&", " and ")
-                .replace("||", " or ")
-                .replace("!", " ! ")
-                .replace("(", " ( ")
-                .replace(")", " ) ")
-        )
-        tokens = expr.split()
+        # --- Tokenize ---
+        import re
+        token_pattern = re.compile(r'(!|\(|\)|\w+|&&|\|\|)')
+        tokens = token_pattern.findall(expr)
+        tokens = ['and' if t=='&&' else 'or' if t=='||' else t for t in tokens]
+
         pos = 0
 
         def resolve(name: str) -> bool:
             opt = self._options_index.get(name)
-            if not opt:
+            if opt is None or opt.value is None:
                 return False
             return bool(opt.value)
-
-        # Grammar:
-        # expr    := or_expr
-        # or_expr := and_expr ("or" and_expr)*
-        # and_expr:= not_expr ("and" not_expr)*
-        # not_expr:= "!" not_expr | atom
-        # atom    := IDENT | "(" expr ")"
 
         def parse_expr():
             return parse_or()
@@ -407,7 +397,6 @@ class KConfig:
         def parse_atom():
             nonlocal pos
             tok = tokens[pos]
-
             if tok == "(":
                 pos += 1
                 val = parse_expr()
@@ -415,16 +404,15 @@ class KConfig:
                     raise ValueError("Unmatched '(' in depends_on")
                 pos += 1
                 return val
-
+            elif tok in ("and", "or", ")"):
+                raise ValueError(f"Unexpected token '{tok}' in atom")
             pos += 1
             return resolve(tok)
 
         result = parse_expr()
-
         if pos != len(tokens):
-            raise ValueError(f"Unexpected token in depends_on: {tokens[pos]}")
-
-        return bool(result)
+            raise ValueError(f"Unexpected token remaining: {tokens[pos:]}")
+        return result
 
     def _is_visible_local(self, opt: KOption, parent_depends: Optional[str] = None) -> bool:
         exprs = []
@@ -505,27 +493,21 @@ class KConfig:
                     visible.append(e)
 
             elif isinstance(e, KMenu):
-                # compute combined depends for this menu (parent_depends may apply)
+                # compute combined depends
                 combined = e.depends_on
                 if parent_depends and combined:
                     combined = f"{parent_depends} and {combined}"
                 elif parent_depends:
                     combined = parent_depends
 
-                # if the menu has a depends expression, evaluate it and only
-                # include the menu + children when visible
                 if combined is None or self._eval_depends(combined):
+                    # include the menu itself
                     visible.append(e)
-                    visible.extend(self.get_visible_entries(e.entries, combined))
-                else:
-                    # menu is hidden; do not append it nor recurse its children
-                    continue
+                    # **recurse into children**
+                    e.visible_entries = self.get_visible_entries(e.entries, combined)
 
             elif isinstance(e, KChoice):
                 visible.append(e)
-                visible.extend(
-                    self.get_visible_entries(e.entries, parent_depends)
-                )
 
             elif isinstance(e, KComment):
                 visible.append(e)
