@@ -123,6 +123,7 @@ def app_css(
     }}
     
     #control_bar Button:focus {{
-
+        background: white;
+        color: blue;
     }}
     """
