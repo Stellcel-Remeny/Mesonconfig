@@ -180,6 +180,13 @@ def main():
         help="Show this help message and exit."
     )
 
+    # --- Positional ---
+    parser.add_argument(
+        "kconfig_positional",
+        nargs="?",
+        help="same as --kconfig-file"
+    )
+
     args = parser.parse_args()
 
     # --- Version flag check --- #
@@ -205,6 +212,10 @@ def main():
         return
 
     # --- Conditions before TUI --- #
+    # If positional was provided and --kconfig-file was not explicitly used
+    if args.kconfig_positional and args.kconfig_file == "KConfig":
+        args.kconfig_file = args.kconfig_positional
+    
     if not Path(args.kconfig_file).is_file():
         print(f"\nThe file '{args.kconfig_file}' does not exist.\n"
               f"Please create '{args.kconfig_file}', or supply correct path to\n"
