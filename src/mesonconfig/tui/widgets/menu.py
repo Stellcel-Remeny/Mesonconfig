@@ -117,17 +117,14 @@ class MenuDisplay(Static):
         if not self.is_mounted:
             return
 
-        # Resize if needed
-        while len(self.list_view.children) < len(items):
-            self.list_view.append(ListItem(Label("")))
+        # Clear everything first
+        self.list_view.clear()
 
-        while len(self.list_view.children) > len(items):
-            self.list_view.children[-1].remove()
-
-        # Update text only
-        for list_item, text in zip(self.list_view.children, items):
-            label = list_item.query_one(Label)
-            label.update(text)
+        # Now rebuild safely
+        for i, item in enumerate(items):
+            self.list_view.append(
+                ListItem(Label(item))
+            )
         
     def set_controls_visible(self, visible: bool) -> None:
         self.show_controls = visible
