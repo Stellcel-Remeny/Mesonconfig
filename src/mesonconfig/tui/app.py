@@ -168,7 +168,7 @@ class MCfgApp(
 
         # At root
         if self._esc_timer is None:
-            self.set_status("Press ESC / < Exit > again to exit")
+            self.set_secondary_status("Press ESC / < Exit > again to exit")
             self._esc_timer = self.set_timer(1.0, self._reset_esc)
         else:
             self.exit()
@@ -182,7 +182,7 @@ class MCfgApp(
 
     def _reset_esc(self):
         self._esc_timer = None
-        self.set_status("")
+        self._show_primary_status()
 
     def _focus_control(self):
         buttons = self.main_list.control_bar.children
