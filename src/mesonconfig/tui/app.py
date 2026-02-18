@@ -10,6 +10,9 @@ from mesonconfig.tui.chrome.window_mixin import WindowChromeMixin
 from mesonconfig.tui.lifecycle.handlers import LifecycleHandlers
 from mesonconfig.tui.config import AppConfig, UIState
 from mesonconfig.tui.widgets.menu import MenuDisplay
+from mesonconfig.tui.widgets.string import StringEditScreen
+from mesonconfig.tui.widgets.help import HelpScreen
+from mesonconfig.tui.widgets.exit import ConfirmExitScreen
 from mesonconfig.kconfig import KConfig, KMenu, KOption, KComment
 # textual tui libs
 from textual.app import App
@@ -171,7 +174,18 @@ class MCfgApp(
             self.set_secondary_status("Press ESC / < Exit > again to exit")
             self._esc_timer = self.set_timer(1.0, self._reset_esc)
         else:
-            self.exit()
+            def callback(result):
+                if result == "yes":
+                    self.kconfig.save_config(self.config.output_file)
+                    self.exit()
+                elif result == "no":
+                    self.exit()
+                # cancel → do nothing
+
+            self.push_screen(
+                ConfirmExitScreen(self.config.output_file),
+                callback
+            )
 
     #  --[ Functions ]--  #
     def _get_status_path(self):
@@ -238,11 +252,45 @@ class MCfgApp(
 
         entry = self.current_entries[index]
 
+        if not self.kconfig.is_visible(entry):
+            return
+
         if isinstance(entry, KMenu):
             self.menu_stack.append(entry)
             self.render_entries()
 
         elif isinstance(entry, KOption):
+
             if entry.opt_type == "bool":
                 entry.value = not bool(entry.value)
                 self.render_entries()
+
+            elif entry.opt_type in ("string", "int"):
+                def callback(result):
+                    if result is not None:
+                        if entry.opt_type == "int":
+                            entry.value = int(result)
+                        else:
+                            entry.value = result
+                        self.render_entries()
+
+                self.push_screen(StringEditScreen(entry), callback)
+                
+    def handle_help(self, index: int):
+        if not self.current_entries:
+            return
+
+        entry = self.current_entries[index]
+
+        if isinstance(entry, KOption):
+            content = f"Type: {entry.opt_type}\n\n{entry.help or 'No help available.'}"
+            self.push_screen(HelpScreen(entry.prompt, content))
+
+        elif isinstance(entry, KMenu):
+            self.push_screen(
+                HelpScreen(
+                    entry.title,
+                    "General submenu help placeholder."
+                )
+            )
+        

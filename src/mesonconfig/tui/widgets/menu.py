@@ -1,5 +1,5 @@
 #
-# Textual widgets for Mesonconfig
+# Scrollable menu widget for Mesonconfig
 # 2026, Remeny
 #
 
@@ -10,9 +10,9 @@
 # ---[ Libraries ]--- #
 # textual tui libs
 from textual.widgets import Label, ListView, ListItem, Static, Button
-from textual.containers import Container, Horizontal, Vertical
+from textual.containers import Container, Horizontal
 
-# ---[ Widgets ]--- #
+# ---[ MenuDisplay ]--- #
 class MenuDisplay(Static):
     """Displays a scrollable Menu interface."""
     
@@ -98,12 +98,19 @@ class MenuDisplay(Static):
         elif button_id == "btn_load":
             self.handle_load()
 
-    # TODO: Add actual functionality
     def handle_select(self):
-        self.app.dbg("Select pressed")
+        if not self.list_view.children:
+            return
+
+        index = self.list_view.index
+        self.app.handle_menu_selection(index)
 
     def handle_help(self):
-        self.app.dbg("Help pressed")
+        if not self.list_view.children:
+            return
+
+        index = self.list_view.index
+        self.app.handle_help(index)
 
     def handle_save(self):
         self.app.dbg("Save pressed")
