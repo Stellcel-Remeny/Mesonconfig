@@ -125,8 +125,8 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
         border: {window_border} {window_fg};
         width: auto;
         height: auto;
-        max-width: 80%;
-        max-height: 80%;
+        max-width: 100%;
+        max-height: 100%;
         align: center middle;
     }}
 

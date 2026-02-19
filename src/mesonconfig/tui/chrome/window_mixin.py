@@ -27,9 +27,9 @@ class WindowChromeMixin:
             self.header_separator.update("─" * (width - 2))
 
     def hide_main_content(self):
-        self.main_content.add_class("hidden")
+        self.windows.add_class("hidden")
         self.state.content_hidden = True
 
     def show_main_content(self):
-        self.main_content.remove_class("hidden")
+        self.windows.remove_class("hidden")
         self.state.content_hidden = False

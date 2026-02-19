@@ -107,7 +107,13 @@ class MCfgApp(
 
         self.overlay_layer = Container(
             id="overlay_layer",
-            classes="hidden"
+            classes="hidden",
+        )
+        
+        self.windows = Vertical(
+            self.main_content,
+            self.overlay_layer,
+            id="windows",
         )
         
         # Yield the layout
@@ -115,8 +121,7 @@ class MCfgApp(
             self.header_label,
             self.header_separator,
             Vertical(
-                self.main_content,
-                self.overlay_layer,
+                self.windows,
             ),
             self.primary_status,
             self.secondary_status,
