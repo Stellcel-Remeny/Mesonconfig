@@ -132,16 +132,19 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
 
     .dialog-buttons {{
         border-top: {window_border} {window_fg};
-        height: 3;
+        height: 2;
         align-horizontal: center;
         
         Button {{
+            min-width: 0;
+            width: auto;
+            padding: 0;
+            margin: 0 2;
+            border: none;
             background: transparent;
             color: {window_fg};
-            border: none;
-            margin: 0 3;
         }}
-        
+
         Button:focus {{
             background: white;
             color: {highlight};
@@ -186,7 +189,7 @@ def _list_view_css() -> str:
     }
     """
 
-def _control_bar_css(highlight_color: str, window_fg: str) -> str:
+def _control_bar_css(highlight: str, window_fg: str) -> str:
     return f"""
     #control_bar {{
         height: 1;
@@ -204,7 +207,7 @@ def _control_bar_css(highlight_color: str, window_fg: str) -> str:
 
         Button:focus {{
             background: white;
-            color: {highlight_color};
+            color: {highlight};
         }}
     }}
     """
