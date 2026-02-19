@@ -9,7 +9,6 @@ def _safe(value: str, fallback: str) -> str:
     """Defensive color fallback."""
     return value if value else fallback
 
-
 # ---[ CSS Builders ]--- #
 
 def _base_layout(background: str) -> str:
@@ -27,7 +26,6 @@ def _base_layout(background: str) -> str:
         }}
     }}
     """
-
 
 def _header_css(window_bg: str, window_fg: str) -> str:
     return f"""
@@ -60,7 +58,6 @@ def _header_css(window_bg: str, window_fg: str) -> str:
         color: lightgreen;
     }}
     """
-
 
 def _menu_display_css(highlight: str, window_border: str, window_bg: str, window_fg: str) -> str:
     return f"""
@@ -114,6 +111,64 @@ def _menu_display_css(highlight: str, window_border: str, window_bg: str, window
     }}
     """
 
+def _modal_windows_css(highlight: str, window_border: str, window_bg: str, window_fg: str) -> str:
+    return f"""
+    #overlay_layer {{
+        position: absolute;
+        width: 100%;
+        height: 100%;
+    }}
+
+    .dialog-window {{
+        background: {window_bg};
+        color: {window_fg};
+        border: {window_border} {window_fg};
+        width: auto;
+        height: auto;
+        max-width: 80%;
+        max-height: 80%;
+        align: center middle;
+    }}
+
+    .dialog-buttons {{
+        border-top: {window_border} {window_fg};
+        height: 3;
+        align-horizontal: center;
+        
+        Button {{
+            background: transparent;
+            color: {window_fg};
+            border: none;
+            margin: 0 3;
+        }}
+        
+        Button:focus {{
+            background: white;
+            color: {highlight};
+        }}
+    }}
+    
+    #string_dialog {{
+        width: 60;
+        height: auto;
+    }}
+
+    #exit_dialog {{
+        width: 70;
+        height: auto;
+    }}
+
+    #help_dialog {{
+        height: 1fr;
+        width: 100%;
+        border-title-align: center;
+        margin: 0 3 1 2;
+    }}
+
+    #input_wrapper {{
+        border: solid white;
+    }}
+    """
 
 def _list_view_css() -> str:
     return """
@@ -130,7 +185,6 @@ def _list_view_css() -> str:
         }
     }
     """
-
 
 def _control_bar_css(highlight_color: str, window_fg: str) -> str:
     return f"""
@@ -155,7 +209,6 @@ def _control_bar_css(highlight_color: str, window_fg: str) -> str:
     }}
     """
 
-
 # ---[ Public Entry Point ]--- #
 
 def app_css(
@@ -179,6 +232,7 @@ def app_css(
         _base_layout(background),
         _header_css(window_bg, window_fg),
         _menu_display_css(background, window_border, window_bg, window_fg),
+        _modal_windows_css(background, window_border, window_bg, window_fg),
         _list_view_css(),
         _control_bar_css(background, window_fg),
     ])

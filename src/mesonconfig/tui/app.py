@@ -73,6 +73,12 @@ class MCfgApp(
         super().on_mount()
         self.render_entries()
 
+    #  --[ On class resume ]--  #
+    def on_screen_resume(self) -> None:
+        # Called when modal closes
+        self.main_list.display = True
+        self.main_list.focus()
+
     #  --[ Commit widgets ]--  #
     def compose(self):
         # Header (What to display at the Top-left corner)
@@ -99,12 +105,18 @@ class MCfgApp(
             id="main_content",
         )
 
+        self.overlay_layer = Container(
+            id="overlay_layer",
+            classes="hidden"
+        )
+        
         # Yield the layout
         yield Container(
+            self.header_label,
+            self.header_separator,
             Vertical(
-                self.header_label,
-                self.header_separator,
                 self.main_content,
+                self.overlay_layer,
             ),
             self.primary_status,
             self.secondary_status,
@@ -158,6 +170,10 @@ class MCfgApp(
                     self.main_list.list_view.index = index
 
     def action_escape_key(self):
+        if not self.overlay_layer.has_class("hidden"):
+            self.close_dialog()
+            return
+        
         if self.menu_stack:
             self.menu_stack.pop()
             self._focus_mode = "list"
@@ -182,8 +198,9 @@ class MCfgApp(
                     self.exit()
                 # cancel → do nothing
 
-            self.push_screen(
-                ConfirmExitScreen(self.config.output_file),
+            self.main_list.display = False
+            self.show_dialog(
+                ConfirmExitScreen(),
                 callback
             )
 
@@ -274,7 +291,8 @@ class MCfgApp(
                             entry.value = result
                         self.render_entries()
 
-                self.push_screen(StringEditScreen(entry), callback)
+                self.main_list.display = False
+                self.show_dialog(StringEditScreen(entry), callback)
                 
     def handle_help(self, index: int):
         if not self.current_entries:
@@ -284,13 +302,38 @@ class MCfgApp(
 
         if isinstance(entry, KOption):
             content = f"Type: {entry.opt_type}\n\n{entry.help or 'No help available.'}"
-            self.push_screen(HelpScreen(entry.prompt, content))
+            self.main_list.display = False
+            self.show_dialog(HelpScreen(entry.prompt, content))
 
         elif isinstance(entry, KMenu):
-            self.push_screen(
+            self.main_list.display = False
+            self.show_dialog(
                 HelpScreen(
                     entry.title,
                     "General submenu help placeholder."
                 )
             )
         
+    def show_dialog(self, widget, callback=None):
+        self.overlay_layer.remove_class("hidden")
+        self.overlay_layer.mount(widget)
+
+        if callback:
+            widget.on_close = lambda result=None: (
+                callback(result),
+                self.close_dialog()
+            )
+        else:
+            widget.on_close = lambda result=None: self.close_dialog()
+
+        widget.focus()
+
+    def close_dialog(self):
+        # Remove all dialog widgets completely
+        for child in list(self.overlay_layer.children):
+            child.remove()
+
+        self.overlay_layer.add_class("hidden")
+
+        self.main_list.display = True
+        self.main_list.list_view.focus()
