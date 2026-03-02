@@ -129,16 +129,22 @@ class MCfgApp(
 
     #  --[ Key methods ]--  #
     def action_cursor_up(self):
+        if self._dialog_open():
+            return
         self._focus_mode = "list"
         self.main_list.list_view.focus()
         self.main_list.list_view.action_cursor_up()
 
     def action_cursor_down(self):
+        if self._dialog_open():
+            return
         self._focus_mode = "list"
         self.main_list.list_view.focus()
         self.main_list.list_view.action_cursor_down()
 
     def action_control_left(self):
+        if self._dialog_open():
+            return
         if self._focus_mode == "list":
             self._focus_mode = "controls"
             self._control_index = len(self.main_list.control_bar.children) - 1
@@ -148,6 +154,8 @@ class MCfgApp(
             self._focus_control()
 
     def action_control_right(self):
+        if self._dialog_open():
+            return
         if self._focus_mode == "list":
             self._focus_mode = "controls"
             self._control_index = 0
@@ -157,6 +165,8 @@ class MCfgApp(
             self._focus_control()
 
     def action_activate(self):
+        if self._dialog_open():
+            return
         if self._focus_mode == "list":
             index = self.main_list.list_view.index
             self.handle_menu_selection(index)
@@ -164,6 +174,8 @@ class MCfgApp(
             self.main_list.control_bar.children[self._control_index].press()
 
     def action_space(self):
+        if self._dialog_open():
+            return
         if self._focus_mode == "list":
             index = self.main_list.list_view.index
             entry = self.current_entries[index]
@@ -224,6 +236,9 @@ class MCfgApp(
         buttons = self.main_list.control_bar.children
         btn = buttons[self._control_index]
         btn.focus()
+
+    def _dialog_open(self) -> bool:
+        return not self.overlay_layer.has_class("hidden")
 
     def get_current_entries(self):
         if not self.menu_stack:
