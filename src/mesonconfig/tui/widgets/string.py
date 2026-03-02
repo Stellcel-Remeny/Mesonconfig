@@ -17,7 +17,7 @@ class StringEditScreen(ModalScreen):
     def compose(self):
         yield Container(
             Vertical(
-                Label("  Please enter a value. Use <TAB> to move."),
+                Label("  Please enter a string value. Use the <TAB> key to move from the input\n  field to the buttons below it."),
                 Container(
                     Input(
                         value=str(self.option.value or ""),

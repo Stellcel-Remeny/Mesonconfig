@@ -158,8 +158,8 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
     }}
     
     #string_dialog {{
-        width: 60;
-        height: auto;
+        width: 75;
+        height: 10;
     }}
 
     #exit_dialog {{
@@ -179,6 +179,14 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
 
     #input_wrapper {{
         border: solid white;
+        margin: 0 1 1 1;
+    }}
+
+    #value_input {{
+        background: transparent;
+        border: none;
+        padding: 0 0;
+        height: 1;
     }}
     """
 
