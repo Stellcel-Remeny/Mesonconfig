@@ -93,20 +93,21 @@ class MCfgApp(
                     "  Legend: [*] built-in  [ ] excluded  <M> module  < > module capable"),
             items=["Hello", "If you", "see this,", "that means", "something has", "gone wrong..."]
         )
-
-        self.main_content = Vertical(
-            self.main_list,
-            id="main_content",
-        )
         
-        # Yield the layout
-        yield Container(
-            self.header_label,
-            self.header_separator,
+        # This wrapper owns the flexible height
+        body = Vertical(
             Vertical(
                 self.main_list,
                 id="main_content",
             ),
+            id="body_wrapper",
+        )
+
+        # Yield the layout
+        yield Container(
+            self.header_label,
+            self.header_separator,
+            body,
             self.primary_status,
             self.secondary_status,
         )

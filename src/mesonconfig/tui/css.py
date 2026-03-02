@@ -18,6 +18,10 @@ def _base_layout(background: str) -> str:
         color: cyan;
 
         #main_content {{
+            height: auto;
+        }}
+
+        #bottom_spacer {{
             height: 1fr;
         }}
 
