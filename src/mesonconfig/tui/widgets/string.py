@@ -3,32 +3,32 @@
 # 2026, Remeny
 #
 
-# ---[ Libraries ]--- #
-# textual tui libs
 from textual.widgets import Label, Button, Input
 from textual.containers import Container, Horizontal, Vertical
+from textual.screen import ModalScreen
 
-# ---[ StringEditScreen ]--- #
-class StringEditScreen(Container):
+class StringEditScreen(ModalScreen):
     """Popup screen to edit string/int options."""
 
     def __init__(self, option):
         super().__init__()
         self.option = option
-        self.on_close = None
 
     def compose(self):
         yield Container(
             Vertical(
-                Label("  Please enter a string value. Use the <TAB> key to move."),
+                Label("  Please enter a value. Use <TAB> to move."),
                 Container(
-                    Input(value=str(self.option.value or ""), id="value_input"),
+                    Input(
+                        value=str(self.option.value or ""),
+                        id="value_input"
+                    ),
                     id="input_wrapper",
                 ),
                 Container(
                     Horizontal(
                         Button("<  Ok  >", id="ok"),
-                        Button("< Help >", id="help"),
+                        Button("< Cancel >", id="cancel"),
                     ),
                     classes="dialog-buttons"
                 ),
@@ -37,12 +37,15 @@ class StringEditScreen(Container):
             classes="dialog-window"
         )
 
+    def on_mount(self):
+        self.query_one("#value_input", Input).focus()
+
     def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "ok":
             value = self.query_one("#value_input", Input).value
-            if self.on_close:
-                self.on_close(value)
+            self.dismiss(value)
+        elif event.button.id == "cancel":
+            self.dismiss(None)
 
-        elif event.button.id == "help":
-            if self.on_close:
-                self.on_close(None)
+    def key_escape(self):
+        self.dismiss(None)

@@ -27,9 +27,28 @@ class WindowChromeMixin:
             self.header_separator.update("─" * (width - 2))
 
     def hide_main_content(self):
-        self.windows.add_class("hidden")
+        # Hide main content area
+        main = self.query("#main_content").first()
+        if main:
+            main.add_class("hidden")
+
+        # Hide any active modal screen
+        if len(self.screen_stack) > 1:
+            self._hidden_screen = self.screen
+            self.pop_screen()
+
         self.state.content_hidden = True
 
+
     def show_main_content(self):
-        self.windows.remove_class("hidden")
+        # Restore main content
+        main = self.query("#main_content").first()
+        if main:
+            main.remove_class("hidden")
+
+        # Restore previously hidden modal if one existed
+        if getattr(self, "_hidden_screen", None):
+            self.push_screen(self._hidden_screen)
+            self._hidden_screen = None
+
         self.state.content_hidden = False

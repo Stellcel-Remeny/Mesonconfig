@@ -3,23 +3,18 @@
 # 2026, Remeny
 #
 
-# ---[ Libraries ]--- #
-# textual tui libs
+from textual.screen import ModalScreen
 from textual.widgets import Label, Button
 from textual.containers import Container, Horizontal, Vertical
 
-# ---[ MenuDisplay ]--- #
-class ConfirmExitScreen(Container):
 
-    def __init__(self):
-        super().__init__()
-        self.on_close = None
+class ConfirmExitScreen(ModalScreen):
 
     def compose(self):
         yield Container(
             Vertical(
                 Label("  Do you wish to save your new configuration?"),
-                Label("  (Press <ESC><ESC> to continue project configuration.)"),
+                Label("  (Press <ESC> to cancel.)"),
                 Container(
                     Horizontal(
                         Button("< Yes >", id="yes"),
@@ -31,7 +26,12 @@ class ConfirmExitScreen(Container):
             id="exit_dialog",
             classes="dialog-window"
         )
-        
-    def on_button_pressed(self, event):
-        if self.on_close:
-            self.on_close(event.button.id)
+
+    def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "yes":
+            self.dismiss("yes")
+        elif event.button.id == "no":
+            self.dismiss("no")
+
+    def key_escape(self):
+        self.dismiss(None)

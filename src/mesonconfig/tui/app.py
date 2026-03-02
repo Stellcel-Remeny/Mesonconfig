@@ -73,12 +73,6 @@ class MCfgApp(
         super().on_mount()
         self.render_entries()
 
-    #  --[ On class resume ]--  #
-    def on_screen_resume(self) -> None:
-        # Called when modal closes
-        self.main_list.display = True
-        self.main_list.focus()
-
     #  --[ Commit widgets ]--  #
     def compose(self):
         # Header (What to display at the Top-left corner)
@@ -104,24 +98,14 @@ class MCfgApp(
             self.main_list,
             id="main_content",
         )
-
-        self.overlay_layer = Container(
-            id="overlay_layer",
-            classes="hidden",
-        )
-        
-        self.windows = Vertical(
-            self.main_content,
-            self.overlay_layer,
-            id="windows",
-        )
         
         # Yield the layout
         yield Container(
             self.header_label,
             self.header_separator,
             Vertical(
-                self.windows,
+                self.main_list,
+                id="main_content",
             ),
             self.primary_status,
             self.secondary_status,
@@ -129,22 +113,16 @@ class MCfgApp(
 
     #  --[ Key methods ]--  #
     def action_cursor_up(self):
-        if self._dialog_open():
-            return
         self._focus_mode = "list"
         self.main_list.list_view.focus()
         self.main_list.list_view.action_cursor_up()
 
     def action_cursor_down(self):
-        if self._dialog_open():
-            return
         self._focus_mode = "list"
         self.main_list.list_view.focus()
         self.main_list.list_view.action_cursor_down()
 
     def action_control_left(self):
-        if self._dialog_open():
-            return
         if self._focus_mode == "list":
             self._focus_mode = "controls"
             self._control_index = len(self.main_list.control_bar.children) - 1
@@ -154,8 +132,6 @@ class MCfgApp(
             self._focus_control()
 
     def action_control_right(self):
-        if self._dialog_open():
-            return
         if self._focus_mode == "list":
             self._focus_mode = "controls"
             self._control_index = 0
@@ -165,8 +141,6 @@ class MCfgApp(
             self._focus_control()
 
     def action_activate(self):
-        if self._dialog_open():
-            return
         if self._focus_mode == "list":
             index = self.main_list.list_view.index
             self.handle_menu_selection(index)
@@ -174,8 +148,6 @@ class MCfgApp(
             self.main_list.control_bar.children[self._control_index].press()
 
     def action_space(self):
-        if self._dialog_open():
-            return
         if self._focus_mode == "list":
             index = self.main_list.list_view.index
             entry = self.current_entries[index]
@@ -187,39 +159,23 @@ class MCfgApp(
                     self.main_list.list_view.index = index
 
     def action_escape_key(self):
-        if not self.overlay_layer.has_class("hidden"):
-            self.close_dialog()
-            return
-        
         if self.menu_stack:
             self.menu_stack.pop()
             self._focus_mode = "list"
             self._control_index = 0
             self.render_entries()
             self.set_status(self._get_status_path())
-            if self._esc_timer:
-                self._esc_timer.stop()
-                self._esc_timer = None
             return
 
-        # At root
-        if self._esc_timer is None:
-            self.set_secondary_status("Press ESC / < Exit > again to exit")
-            self._esc_timer = self.set_timer(1.0, self._reset_esc)
-        else:
-            def callback(result):
-                if result == "yes":
-                    self.kconfig.save_config(self.config.output_file)
-                    self.exit()
-                elif result == "no":
-                    self.exit()
-                # cancel → do nothing
+        # At root → show exit screen
+        def callback(result):
+            if result == "yes":
+                self.kconfig.save_config(self.config.output_file)
+                self.exit()
+            elif result == "no":
+                self.exit()
 
-            self.main_list.display = False
-            self.show_dialog(
-                ConfirmExitScreen(),
-                callback
-            )
+        self.open_modal(ConfirmExitScreen(), callback)
 
     #  --[ Functions ]--  #
     def _get_status_path(self):
@@ -236,9 +192,6 @@ class MCfgApp(
         buttons = self.main_list.control_bar.children
         btn = buttons[self._control_index]
         btn.focus()
-
-    def _dialog_open(self) -> bool:
-        return not self.overlay_layer.has_class("hidden")
 
     def get_current_entries(self):
         if not self.menu_stack:
@@ -311,8 +264,7 @@ class MCfgApp(
                             entry.value = result
                         self.render_entries()
 
-                self.main_list.display = False
-                self.show_dialog(StringEditScreen(entry), callback)
+                self.open_modal(StringEditScreen(entry), callback)
                 
     def handle_help(self, index: int):
         if not self.current_entries:
@@ -322,38 +274,24 @@ class MCfgApp(
 
         if isinstance(entry, KOption):
             content = f"Type: {entry.opt_type}\n\n{entry.help or 'No help available.'}"
-            self.main_list.display = False
-            self.show_dialog(HelpScreen(entry.prompt, content))
+            self.open_modal(HelpScreen(entry.prompt, content))
 
         elif isinstance(entry, KMenu):
-            self.main_list.display = False
-            self.show_dialog(
+            self.open_modal(
                 HelpScreen(
                     entry.title,
                     "General submenu help placeholder."
                 )
             )
-        
-    def show_dialog(self, widget, callback=None):
-        self.overlay_layer.remove_class("hidden")
-        self.overlay_layer.mount(widget)
+    
+    def open_modal(self, screen, callback=None):
+        self.main_list.display = False
 
-        if callback:
-            widget.on_close = lambda result=None: (
-                callback(result),
-                self.close_dialog()
-            )
-        else:
-            widget.on_close = lambda result=None: self.close_dialog()
+        def wrapped_callback(result):
+            self.main_list.display = True
+            self.main_list.focus()
 
-        widget.focus()
+            if callback:
+                callback(result)
 
-    def close_dialog(self):
-        # Remove all dialog widgets completely
-        for child in list(self.overlay_layer.children):
-            child.remove()
-
-        self.overlay_layer.add_class("hidden")
-
-        self.main_list.display = True
-        self.main_list.list_view.focus()
+        self.push_screen(screen, wrapped_callback)

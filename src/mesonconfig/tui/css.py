@@ -113,10 +113,8 @@ def _menu_display_css(highlight: str, window_border: str, window_bg: str, window
 
 def _modal_windows_css(highlight: str, window_border: str, window_bg: str, window_fg: str) -> str:
     return f"""
-    #overlay_layer {{
-        position: absolute;
-        width: 100%;
-        height: 100%;
+    ModalScreen {{
+        background: transparent;
     }}
 
     .dialog-window {{
@@ -164,8 +162,10 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
     #help_dialog {{
         height: 1fr;
         width: 100%;
+        height: 100%;
+        align: center middle;
         border-title-align: center;
-        margin: 0 3 1 2;
+        margin: 2 3 2 2;
     }}
 
     #input_wrapper {{
