@@ -14,7 +14,7 @@ class ConfirmExitScreen(ModalScreen):
         yield Container(
             Vertical(
                 Label("  Do you wish to save your new configuration?"),
-                Label("  (Press <ESC> to cancel.)"),
+                Label("  (Press <ESC><ESC> to continue project configuration.)"),
                 Container(
                     Horizontal(
                         Button("< Yes >", id="yes"),

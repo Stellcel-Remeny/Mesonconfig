@@ -119,6 +119,7 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
     return f"""
     ModalScreen {{
         background: transparent;
+        align: center middle;
     }}
 
     .dialog-window {{
@@ -129,7 +130,6 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
         height: auto;
         max-width: 100%;
         max-height: 100%;
-        align: center middle;
     }}
 
     .dialog-buttons {{
@@ -151,6 +151,10 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
             background: white;
             color: {highlight};
         }}
+
+        Horizontal {{
+            width: auto;
+        }}
     }}
     
     #string_dialog {{
@@ -159,8 +163,9 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
     }}
 
     #exit_dialog {{
-        width: 70;
-        height: auto;
+        width: 60;
+        height: 6;
+        align: center middle;
     }}
 
     #help_dialog {{
