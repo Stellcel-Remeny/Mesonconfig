@@ -3,10 +3,6 @@
 # 2026, Remeny
 #
 
-# TODO: Make MenuDisplay and other windows 3D (shadow)
-# TODO: Add a quit screen on Exit selected
-# TODO: Add real functionality on button pressed
-
 # ---[ Libraries ]--- #
 # textual tui libs
 from textual.widgets import Label, ListView, ListItem, Static, Button
