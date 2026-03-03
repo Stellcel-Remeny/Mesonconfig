@@ -5,6 +5,7 @@
 
 # ---[ Libraries ]--- #
 from mesonconfig import core
+from textual.screen import ModalScreen
 
 # ---[ Window Chrome Mixin ]--- #
 class WindowChromeMixin:
@@ -48,3 +49,12 @@ class WindowChromeMixin:
             self.screen.remove_class("hidden")
 
         self.state.content_hidden = False
+
+    def dismiss_all_modals(self) -> None:
+        """Dismiss all ModalScreen instances and triggers callbacks."""
+        while (
+            len(self.screen_stack) > 1 and
+            isinstance(self.screen_stack[-1], ModalScreen)
+        ):
+            top_screen = self.screen_stack[-1]
+            top_screen.dismiss(None)

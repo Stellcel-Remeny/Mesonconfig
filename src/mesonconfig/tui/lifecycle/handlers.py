@@ -14,6 +14,10 @@ class LifecycleHandlers:
         self.update_header_separator()
         if not self.check_size() and not self.config.disable_minimum_size_check:
             self.hide_main_content()
+
+            # Due to limitations with ModalScreen, we cannot hide it and bring it back.
+            self.dismiss_all_modals()
+
             self.set_secondary_status(
                 f"Window too small, resize it: Minimum {core.min_cols}x{core.min_rows}"
             )
