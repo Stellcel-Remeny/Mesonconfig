@@ -4,6 +4,7 @@
 #
 
 # ---[ Libraries ]--- #
+from mesonconfig import core
 from mesonconfig.tui.css import app_css
 from mesonconfig.tui.status.status_mixin import StatusMixin
 from mesonconfig.tui.chrome.window_mixin import WindowChromeMixin
@@ -57,6 +58,7 @@ class MCfgApp(
         self._esc_timer = None
         self._focus_mode = "list"
         self._control_index = 0
+        self._last_escape_time = 0.0  # for double escape detection in Exit window
     
     #  --[ Style ]--  #
     @property
@@ -71,7 +73,8 @@ class MCfgApp(
     #  --[ On class mount ]--  #
     def on_mount(self) -> None:
         super().on_mount()
-        self.render_entries()
+        # Schedule render_entries to happen after current event loop
+        self.call_later(self.render_entries)
 
     #  --[ Commit widgets ]--  #
     def compose(self):
@@ -171,7 +174,9 @@ class MCfgApp(
         # At root → show exit screen
         def callback(result):
             if result == "yes":
-                self.kconfig.save_config(self.config.output_file)
+                self.kconfig.save_config(path=self.config.output_file,
+                                         tool_name="Mesonconfig",
+                                         tool_version=core.get_version())
                 self.exit()
             elif result == "no":
                 self.exit()
