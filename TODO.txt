@@ -1,0 +1,31 @@
+[BugFix]
+- Fix bug with double <ESC><ESC> key press in Exit dialog
+- Arrow keys do not switch between buttons in String or Exit dialog, currently only TAB works.
+- Fix bug that happens when size < minimum And a window (like HelpScreen) is launched. It currently does not get hidden.
+- Double check if an option (eg. bool2) depending on another option (eg. bool1):
+    Example case: Make sure that if bool1 is False, and when bool2 depends on bool1, then bool2 must also be False.
+
+[Quality improvements]
+- Proper Help text (Overview And Option help text)
+- Add Help button to String Dialog
+- Add Cancel button to Exit Dialog
+- Ask if you want to --configure or --reconfigure the project if <Yes> is selected in exit dialog
+- Support lists[] and dicts[] in KConfig output file
+- Support Choice variables + UI for them + KConfig updated output code
+- Add code for <Load> and <Save> buttons in TUI
+
+[Features]
+- Ability to generate meson_options.txt from KConfig file
+- Support project configuration other then [project options] (eg. [binaries], [built-in options]). Can show even if KConfig is absent.
+- Draggable windows
+- Add EXit (X) button on windows
+
+[Eyecandy]
+- Shadows for windows
+- 3D Borders
+- Theme presests
+
+[Other]
+- Code refactoring
+- Performance improvements
+- Security improvements
