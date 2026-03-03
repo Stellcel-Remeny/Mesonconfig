@@ -7,8 +7,11 @@ from textual.screen import ModalScreen
 from textual.widgets import Label, Button
 from textual.containers import Container, Horizontal, Vertical
 
-
 class ConfirmExitScreen(ModalScreen):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._esc_timer = None
 
     def compose(self):
         yield Container(
@@ -37,4 +40,14 @@ class ConfirmExitScreen(ModalScreen):
             self.dismiss("cancel")
 
     def key_escape(self):
-        self.dismiss("cancel")
+        if self._esc_timer is None:
+            self.app.set_secondary_status("Press ESC again to continue project configuration.")
+            self._esc_timer = self.set_timer(1.0, self._reset_esc)
+        else:
+            self._esc_timer.stop()
+            self._reset_esc()
+            self.dismiss("cancel")
+
+    def _reset_esc(self):
+        self._esc_timer = None
+        self.app._show_primary_status()

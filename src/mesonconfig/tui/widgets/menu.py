@@ -84,7 +84,9 @@ class MenuDisplay(Static):
         button_id = event.button.id
 
         if button_id == "btn_exit":
-            self.app.action_escape_key()
+            if self.app._return_to_parent_menu():
+                return
+            self.app._show_exit_dialog()
 
         elif button_id == "btn_select":
             self.handle_select()

@@ -163,25 +163,18 @@ class MCfgApp(
                     self.main_list.list_view.index = index
 
     def action_escape_key(self):
-        if self.menu_stack:
-            self.menu_stack.pop()
-            self._focus_mode = "list"
-            self._control_index = 0
-            self.render_entries()
-            self.set_status(self._get_status_path())
+        if self._return_to_parent_menu():
             return
 
-        # At root → show exit screen
-        def callback(result):
-            if result == "yes":
-                self.kconfig.save_config(path=self.config.output_file,
-                                         tool_name="Mesonconfig",
-                                         tool_version=core.get_version())
-                self.exit()
-            elif result == "no":
-                self.exit()
-
-        self.open_modal(ConfirmExitScreen(), callback)
+        # At root → show exit screen (show only if other windows aren't open)
+        if not self.state.other_windows_are_open:
+            if self._esc_timer is None:
+                self.set_secondary_status("Press ESC again to exit")
+                self._esc_timer = self.set_timer(1.0, self._reset_esc)
+            else:
+                self._esc_timer.stop()
+                self._reset_esc()
+                self._show_exit_dialog()
 
     #  --[ Functions ]--  #
     def _get_status_path(self):
@@ -194,10 +187,39 @@ class MCfgApp(
         self._esc_timer = None
         self._show_primary_status()
 
+    def _reset_other_windows_are_open(self):
+        self.state.other_windows_are_open = False
+
+    def _return_to_parent_menu(self) -> bool:
+        # Returns True if went to parent menu, False if already at root
+        if self.menu_stack:
+            self.menu_stack.pop()
+            self._focus_mode = "list"
+            self._control_index = 0
+            self.render_entries()
+            self.set_status(self._get_status_path())
+            return True
+        return False
+
     def _focus_control(self):
         buttons = self.main_list.control_bar.children
         btn = buttons[self._control_index]
         btn.focus()
+
+    def _show_exit_dialog(self):
+        def callback(result):
+            if result == "yes":
+                self.kconfig.save_config(path=self.config.output_file,
+                                        tool_name="Mesonconfig",
+                                        tool_version=core.get_version())
+                self.exit()
+            elif result == "no":
+                self.exit()
+            elif result == "cancel":
+                self.state.other_windows_are_open = True
+                self.state.other_windows_are_open = self.set_timer(0.2, self._reset_other_windows_are_open)
+
+        self.open_modal(ConfirmExitScreen(), callback)
 
     def get_current_entries(self):
         if not self.menu_stack:
@@ -294,10 +316,12 @@ class MCfgApp(
         self.main_list.display = False
 
         def wrapped_callback(result):
+            self.state.other_windows_are_open = True
             self.main_list.display = True
             self.main_list.focus()
 
             if callback:
                 callback(result)
 
+        self.state.other_windows_are_open = True
         self.push_screen(screen, wrapped_callback)

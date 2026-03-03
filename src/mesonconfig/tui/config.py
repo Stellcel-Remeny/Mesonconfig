@@ -25,4 +25,5 @@ class UIState:
     # Stuff in here can be changed by program
     content_hidden: bool = False
     secondary_visible: bool = False
+    other_windows_are_open: bool = False
     last_status_text: str = ""
