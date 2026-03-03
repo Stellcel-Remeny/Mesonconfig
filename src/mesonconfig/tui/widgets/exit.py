@@ -19,6 +19,7 @@ class ConfirmExitScreen(ModalScreen):
                     Horizontal(
                         Button("< Yes >", id="yes"),
                         Button("<  No  >", id="no"),
+                        Button("<Cancel>", id="cancel"),
                     ),
                     classes="dialog-buttons"
                 ),
@@ -32,6 +33,8 @@ class ConfirmExitScreen(ModalScreen):
             self.dismiss("yes")
         elif event.button.id == "no":
             self.dismiss("no")
+        elif event.button.id == "cancel":
+            self.dismiss("cancel")
 
     def key_escape(self):
-        self.dismiss(None)
+        self.dismiss("cancel")

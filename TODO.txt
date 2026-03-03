@@ -8,7 +8,7 @@
 [Quality improvements]
 - Proper Help text (Overview And Option help text)
 - Add Help button to String Dialog
-- Add Cancel button to Exit Dialog
+OK - Add Cancel button to Exit Dialog
 - Ask if you want to --configure or --reconfigure the project if <Yes> is selected in exit dialog
 - Support lists[] and dicts[] in KConfig output file
 - Support Choice variables + UI for them + KConfig updated output code
