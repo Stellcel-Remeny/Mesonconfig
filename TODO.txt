@@ -1,6 +1,6 @@
 [BugFix]
 OK- Fix bug with double <ESC><ESC> key press in Exit dialog
-- Arrow keys do not switch between buttons in String or Exit dialog, currently only TAB works.
+OK - Arrow keys do not switch between buttons in String or Exit dialog, currently only TAB works.
 - Fix bug that happens when size < minimum And a window (like HelpScreen) is launched. It currently does not get hidden.
 - Double check if an option (eg. bool2) depending on another option (eg. bool1):
     Example case: Make sure that if bool1 is False, and when bool2 depends on bool1, then bool2 must also be False.
