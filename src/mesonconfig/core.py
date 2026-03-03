@@ -35,15 +35,3 @@ log = logging.getLogger("mesonconfig")
 # ---[ Version ]--- #
 def get_version() -> str:
     return pkg_version("mesonconfig")
-
-# ---[ Other stuff ]--- #
-def get_options():
-    return [
-        ("enable_tests", True),
-        ("use_system_lib", False),
-        ("optimization", "O2"),
-    ]
-
-
-def set_option(name: str, value: str) -> None:
-    print(f"Setting {name} = {value}")
