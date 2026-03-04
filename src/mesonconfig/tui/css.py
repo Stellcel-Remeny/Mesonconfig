@@ -172,10 +172,17 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
     #help_dialog {{
         height: 1fr;
         width: 100%;
-        height: 100%;
         align: center middle;
         border-title-align: center;
         margin: 2 3 2 2;
+
+        Vertical {{
+            height: 100%;
+        }}
+    }}
+
+    #help_content {{
+        height: 1fr;
     }}
 
     #input_wrapper {{

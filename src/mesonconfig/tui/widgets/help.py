@@ -29,7 +29,7 @@ class HelpScreen(ModalScreen):
 
         yield Container(
             Vertical(
-                Static(self.content, expand=True),
+                Static(self.content, expand=True, id="help_content"),
                 Horizontal(
                     exit_btn,
                     classes="dialog-buttons"
