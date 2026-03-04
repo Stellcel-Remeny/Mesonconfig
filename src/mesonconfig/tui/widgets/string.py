@@ -54,6 +54,15 @@ class StringEditScreen(ModalScreen):
         )
 
     def on_mount(self):
+        title = (
+            getattr(self.option, "prompt", None)
+            or getattr(self.option, "name", None)
+            or "Edit Value"
+        )
+
+        dialog = self.query_one("#string_dialog")
+        dialog.border_title = f"[bold]{title}[/bold]"
+
         self.query_one("#value_input", Input).focus()
 
     # --- Arrow navigation (only when buttons focused) ---

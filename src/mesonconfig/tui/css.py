@@ -160,6 +160,7 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
     #string_dialog {{
         width: 75;
         height: 10;
+        border-title-align: center;
     }}
 
     #exit_dialog {{

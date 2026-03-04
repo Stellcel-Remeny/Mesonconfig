@@ -40,6 +40,10 @@ class HelpScreen(ModalScreen):
         )
 
     def on_mount(self):
+        dialog = self.query_one("#help_dialog")
+        dialog.border_title = f"[bold]{self.title}[/bold]"
+        dialog.border_title_align = "center"
+
         self._focus_button()
 
     # --- Arrow navigation ---
