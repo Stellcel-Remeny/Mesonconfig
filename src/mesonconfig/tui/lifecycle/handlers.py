@@ -38,4 +38,3 @@ class LifecycleHandlers:
         # Program logic here...
         self.header(f"{self.config.output_file} - Mesonconfig {core.get_version()}")
         self.set_status("Initializing...")
-        self.dbg("Debug text will show in this color scheme, right down here.")
