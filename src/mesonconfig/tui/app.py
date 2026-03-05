@@ -273,6 +273,10 @@ class MCfgApp(
 
         entry = self.current_entries[index]
 
+        # Do not trigger selection on comments
+        if isinstance(entry, KComment):
+            return
+
         if not self.kconfig.is_visible(entry):
             return
 
