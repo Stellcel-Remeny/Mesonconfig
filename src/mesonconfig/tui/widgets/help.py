@@ -5,7 +5,7 @@
 
 # ---[ Libraries ]--- #
 from textual.screen import ModalScreen
-from textual.widgets import Button, Markdown
+from textual.widgets import Button, Markdown, Static
 from textual.containers import Container, Vertical, Horizontal, VerticalScroll
 
 # ---[ HelpScreen ]--- #
@@ -18,10 +18,11 @@ class HelpScreen(ModalScreen):
         ("down", "scroll_down", ""),
     ]
 
-    def __init__(self, title: str, content: str):
+    def __init__(self, title: str, content: str, markdown: bool = True):
         super().__init__()
         self.title = title
         self.content = content
+        self.markdown = markdown
         self._buttons = []
         self._button_index = 0
 
@@ -29,10 +30,16 @@ class HelpScreen(ModalScreen):
         exit_btn = Button("< Exit >", id="exit")
         self._buttons = [exit_btn]
 
+        # choose renderer
+        if self.markdown:
+            content_widget = Markdown(self.content, id="help_content")
+        else:
+            content_widget = Static(self.content, id="help_content")
+
         yield Container(
             Vertical(
                 VerticalScroll(
-                    Markdown(self.content, id="help_content"),
+                    content_widget,
                     id="help_scroll",
                     can_focus=True,
                 ),
@@ -44,14 +51,13 @@ class HelpScreen(ModalScreen):
             id="help_dialog",
             classes="dialog-window"
         )
-
+        
     def on_mount(self):
         dialog = self.query_one("#help_dialog")
         dialog.border_title = f"[bold]{self.title}[/bold]"
         dialog.border_title_align = "center"
 
-        scroll = self.query_one("#help_scroll")
-        scroll.focus()
+        self.query_one("#help_scroll").focus()
 
     # --- Arrow navigation ---
     def action_focus_left(self):

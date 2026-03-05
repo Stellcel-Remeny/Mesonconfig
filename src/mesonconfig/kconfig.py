@@ -43,6 +43,9 @@ class KOption(KEntry):
 
     value: Optional[Union[bool, int, str]] = None
 
+    filename: Optional[str] = None
+    lineno: Optional[int] = None
+
 
 @dataclass(repr=False)
 class KMenu(KEntry):
@@ -253,7 +256,12 @@ class KConfig:
                     context_stack.pop()
 
                 name = stripped.split()[1]
-                current_option = KOption(name=name, opt_type="bool")  # temporary
+                current_option = KOption(
+                    name=name,
+                    opt_type="bool",
+                    filename=Path(path).name,
+                    lineno=lineno
+                )
                 stack[-1].append(current_option)
                 self._options_index[name] = current_option
 
@@ -563,6 +571,35 @@ class KConfig:
 
         opt.value = self._normalize_value(opt, str(value))
 
+    def get_option_location(self, opt_name: str) -> list[str]:
+        path = []
+
+        def walk(entries, stack):
+            for e in entries:
+                if isinstance(e, KOption):
+                    if e.name == opt_name:
+                        if e.opt_type == "bool":
+                            val = "y" if e.value else "n"
+                        elif e.opt_type == "string":
+                            val = f'"{e.value}"' if e.value is not None else '""'
+                        elif e.opt_type == "int":
+                            val = str(e.value) if e.value is not None else "0"
+                        else:
+                            val = str(e.value)
+
+                        return stack + [f"{e.prompt} ({e.name} [={val}])"]
+                elif isinstance(e, KMenu):
+                    res = walk(e.entries, stack + [e.title])
+                    if res:
+                        return res
+                elif isinstance(e, KChoice):
+                    res = walk(e.entries, stack)
+                    if res:
+                        return res
+            return None
+
+        result = walk(self.entries, [])
+        return result or []
 
     # ---[ Test ]--- #
     def dump(self, entries=None, depth=0) -> None:

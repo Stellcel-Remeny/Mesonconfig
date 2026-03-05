@@ -308,8 +308,47 @@ class MCfgApp(
         entry = self.current_entries[index]
 
         if isinstance(entry, KOption):
-            content = f"Type: {entry.opt_type}\n\n{entry.help or 'No help available.'}"
-            self.open_modal(HelpScreen(title = entry.prompt, content = content))
+
+            help_text = entry.help.strip() or "No help available."
+
+            if entry.opt_type == "bool":
+                symbol_val = "y" if entry.value else "n"
+            elif entry.opt_type == "string":
+                symbol_val = f'"{entry.value}"' if entry.value is not None else '""'
+            elif entry.opt_type == "int":
+                symbol_val = str(entry.value) if entry.value is not None else "0"
+            else:
+                symbol_val = str(entry.value)
+
+            filename = getattr(entry, "filename", "unknown")
+            lineno = getattr(entry, "lineno", "?")
+
+            location = self.kconfig.get_option_location(entry.name)
+            location_str = "\n".join(
+                f"{' ' * (5 + i*2)}-> {p}" for i, p in enumerate(location)
+            )
+
+            content = f"""
+{entry.name}:
+
+{help_text}
+
+
+ Symbol: {entry.name} [={symbol_val}]
+ Type  : {entry.opt_type}
+ Defined at {filename}:{lineno}
+   Prompt: {entry.prompt}
+   Location:
+{location_str}
+            """
+
+            self.open_modal(
+                HelpScreen(
+                    title=entry.prompt,
+                    content=content.strip(),
+                    markdown=False
+                )
+            )
 
         elif isinstance(entry, KMenu):
             try:
@@ -323,7 +362,8 @@ class MCfgApp(
             self.open_modal(
                 HelpScreen(
                     title="README",
-                    content=content
+                    content=content,
+                    markdown=True
                 )
             )
     
