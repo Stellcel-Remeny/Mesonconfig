@@ -181,8 +181,9 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
         }}
     }}
 
-    #help_content {{
+    #help_scroll {{
         height: 1fr;
+        overflow-y: auto;
     }}
 
     #input_wrapper {{

@@ -3,24 +3,30 @@ OK- Fix bug with double <ESC><ESC> key press in Exit dialog
 OK - Arrow keys do not switch between buttons in String or Exit dialog, currently only TAB works.
 OK - Fix bug that happens when size < minimum And a window (like HelpScreen) is launched. It currently does not get hidden.
 - If select KComment, program crashes.
+OK - Scrollable functionality in Help window
 - Double check if an option (eg. bool2) depending on another option (eg. bool1):
     Example case: Make sure that if bool1 is False, and when bool2 depends on bool1, then bool2 must also be False.
 
 [Quality improvements]
 OK - Window titles in sub windows
 - Proper Help text (Overview And Option help text)
-- Add Help button to String Dialog
+- Add Help button to String Dialog + Improve text visibility colour scheme
 OK - Add Cancel button to Exit Dialog
+- Do not show confirm exit if no change took place
+- Rename existing local.conf to local.conf.old, on saving.
+- Load existing local.conf
 - Ask if you want to --configure or --reconfigure the project if <Yes> is selected in exit dialog
 - Support lists[] and dicts[] in KConfig output file
 - Support Choice variables + UI for them + KConfig updated output code
 - Add code for <Load> and <Save> buttons in TUI
+- Display [NEW!] in new options
 
 [Features]
 - Ability to generate meson_options.txt from KConfig file
 - Support project configuration other then [project options] (eg. [binaries], [built-in options]). Can show even if KConfig is absent.
 - Draggable windows
-- Add EXit (X) button on windows
+- Add Exit (X) button on windows
+- Load mesonconfig.ini, which has settings (eg. window_color=, output_file=)
 
 [Eyecandy]
 - Shadows for windows
