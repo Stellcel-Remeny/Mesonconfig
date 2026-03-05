@@ -186,6 +186,10 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
         overflow-y: auto;
     }}
 
+    #help_content {{
+        color: {window_fg};
+    }}
+
     #input_wrapper {{
         border: solid white;
         margin: 0 1 1 1;
