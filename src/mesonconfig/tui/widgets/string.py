@@ -4,6 +4,7 @@
 #
 
 # ---[ Libraries ]--- #
+from mesonconfig.tui.widgets.help import HelpScreen
 from textual.widgets import Label, Button, Input
 from textual.containers import Container, Horizontal, Vertical
 from textual.screen import ModalScreen
@@ -25,8 +26,9 @@ class StringEditScreen(ModalScreen):
     def compose(self):
         ok_btn = Button("<  Ok  >", id="ok")
         cancel_btn = Button("< Cancel >", id="cancel")
+        help_btn = Button("< Help >", id="help")
 
-        self._buttons = [ok_btn, cancel_btn]
+        self._buttons = [ok_btn, cancel_btn, help_btn]
 
         yield Container(
             Vertical(
@@ -45,6 +47,7 @@ class StringEditScreen(ModalScreen):
                     Horizontal(
                         ok_btn,
                         cancel_btn,
+                        help_btn,
                     ),
                     classes="dialog-buttons"
                 ),
@@ -90,8 +93,40 @@ class StringEditScreen(ModalScreen):
         if event.button.id == "ok":
             value = self.query_one("#value_input", Input).value
             self.dismiss(value)
+
         elif event.button.id == "cancel":
             self.dismiss(None)
 
+        elif event.button.id == "help":
+            self._open_help()
+
     def key_escape(self):
         self.dismiss(None)
+
+    # --- Functions --- #
+    def _open_help(self):
+        help_text = getattr(self.option, "help", "").strip() or "No help available."
+
+        symbol_val = self.option.value
+        if self.option.opt_type == "bool":
+            symbol_val = "y" if self.option.value else "n"
+
+        filename = getattr(self.option, "filename", "unknown")
+        lineno = getattr(self.option, "lineno", "?")
+
+        content = (
+            f"{self.option.name}:\n\n"
+            f"{help_text}\n\n"
+            f" Symbol: {self.option.name} [={symbol_val}]\n"
+            f" Type  : {self.option.opt_type}\n"
+            f" Defined at {filename}:{lineno}\n"
+            f"   Prompt: {self.option.prompt}"
+        )
+
+        self.app.push_screen(
+            HelpScreen(
+                title=self.option.prompt or self.option.name,
+                content=content,
+                markdown=False,
+            )
+        )

@@ -160,7 +160,21 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
     #string_dialog {{
         width: 75;
         height: 10;
+        border: {window_border} {window_fg};
         border-title-align: center;
+    }}
+
+    #input_wrapper {{
+        border: {window_border} {window_fg};
+        margin: 0 1 1 1;
+    }}
+
+    #value_input {{
+        background: transparent;
+        border: none;
+        padding: 0 0;
+        height: 1;
+        color: {window_fg};
     }}
 
     #exit_dialog {{
@@ -196,18 +210,6 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
     #help_content MarkdownH4 {{
         margin-top: 0;
         margin-bottom: 1;
-    }}
-
-    #input_wrapper {{
-        border: solid white;
-        margin: 0 1 1 1;
-    }}
-
-    #value_input {{
-        background: transparent;
-        border: none;
-        padding: 0 0;
-        height: 1;
     }}
     """
 

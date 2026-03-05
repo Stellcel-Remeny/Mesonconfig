@@ -13,7 +13,7 @@ OK - Window titles in sub windows
 - Transparent & Darken bkgd of scrollbars everywhere
 OK - Proper Help text (Overview And Option help text)
 - Adjust helptext more
-- Add Help button to String Dialog + Improve text visibility colour scheme
+OK - Add Help button to String Dialog + Improve text visibility colour scheme
 OK - Add Cancel button to Exit Dialog
 - Do not show confirm exit if no change took place
 - Rename existing local.conf to local.conf.old, on saving.
