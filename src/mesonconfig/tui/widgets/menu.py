@@ -71,6 +71,14 @@ class MenuDisplay(Static):
         self.app.dbg(f"Selected: {value} Index: {index}")
         self.app.handle_menu_selection(index)
 
+    def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
+        if not self.items:
+            return
+
+        index = self.list_view.index
+        value = self.items[index]
+        self.app.dbg(f"Highlighted: {value} Index: {index}")
+
     def on_mount(self):
         self.border_title = f"[bold]{self.title}[/bold]"
         self.update_items(self.items)
