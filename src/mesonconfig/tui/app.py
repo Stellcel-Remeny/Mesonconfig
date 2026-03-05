@@ -19,6 +19,8 @@ from mesonconfig.kconfig import KConfig, KMenu, KOption, KComment
 from textual.app import App
 from textual.widgets import Label
 from textual.containers import Container, Vertical
+# Other libs
+from pathlib import Path
 
 # ---[ Main TUI Interface ]--- #
 class MCfgApp(
@@ -75,6 +77,7 @@ class MCfgApp(
         super().on_mount()
         # Schedule render_entries to happen after current event loop
         self.call_later(self.render_entries)
+        self.set_timer(0.3, lambda: self.dbg("Debug text will show in this color scheme, right down here."))
 
     #  --[ Commit widgets ]--  #
     def compose(self):
@@ -302,13 +305,21 @@ class MCfgApp(
 
         if isinstance(entry, KOption):
             content = f"Type: {entry.opt_type}\n\n{entry.help or 'No help available.'}"
-            self.open_modal(HelpScreen(entry.prompt, content))
+            self.open_modal(HelpScreen(title = entry.prompt, content = content))
 
         elif isinstance(entry, KMenu):
+            try:
+                help_path = Path(__file__).parent / "README"
+                content = help_path.read_text(encoding="utf-8")
+            except FileNotFoundError:
+                content = "README file not found."
+            except Exception as e:
+                content = f"Error loading README: {e}"
+
             self.open_modal(
                 HelpScreen(
-                    entry.title,
-                    "General submenu help placeholder."
+                    title="README",
+                    content=content
                 )
             )
     
