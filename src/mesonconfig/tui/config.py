@@ -20,6 +20,10 @@ class AppConfig:
     kconfig_file: str
     output_file: str
     
+    logging: bool = False          # Enable/disable logging
+    log_file: str = None           # Path to logfile
+    debug_timer: float = 0.5       # Time to display dbg messages
+
 @dataclass
 class UIState:
     # Stuff in here can be changed by program

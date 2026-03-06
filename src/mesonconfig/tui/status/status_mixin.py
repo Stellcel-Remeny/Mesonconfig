@@ -3,6 +3,10 @@
 # 2026, Remeny
 #
 
+# ----[ Libraries ]--- #
+from mesonconfig.core import log_debug
+import time
+
 # ---[ Status Mixin ]--- #
 class StatusMixin:
     def _show_primary_status(self):
@@ -29,6 +33,15 @@ class StatusMixin:
         self.secondary_status.update(text)
 
     def dbg(self, text: str):
-        # Only shows if verbose is enabled
+        """
+        Show debug text in the secondary status bar and wait some seconds
+        so it's visible before resuming execution.
+
+        Only shows if verbose mode is enabled.
+        """
         if self.config.verbose:
+            if self.config.logging:
+                log_debug(msg=text, log_file=self.config.log_file)
             self.set_secondary_status(text)
+            # Halts the program for specified seconds
+            time.sleep(self.config.debug_timer)

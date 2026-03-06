@@ -75,6 +75,17 @@ class MCfgApp(
     #  --[ On class mount ]--  #
     def on_mount(self) -> None:
         super().on_mount()
+
+        # auto-load existing output file
+        if self.config.output_file:
+            try:
+                self.kconfig.load_config(path = self.config.output_file)
+                self.dbg(f"Loaded existing config: {self.config.output_file}")
+            except FileNotFoundError:
+                self.dbg(f"No existing config found at: {self.config.output_file}")
+            except Exception as e:
+                self.dbg(f"Error loading existing config {self.config.output_file}: {e}")
+
         # Schedule render_entries to happen after current event loop
         self.call_later(self.render_entries)
         self.set_timer(0.3, lambda: self.dbg("Debug text will show in this color scheme, right down here."))

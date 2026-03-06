@@ -6,6 +6,8 @@
 # ---[ Libraries ]--- #
 import logging
 from importlib.metadata import version as pkg_version
+from datetime import datetime
+from pathlib import Path
 
 # ---[ Variables]--- #
 # Minimum screen resolution
@@ -15,22 +17,17 @@ min_rows: int = 20
 # ---[ Classes ]--- #
 
 # ---[ Logging ]--- #
-def setup_logging(debug: bool = False, logfile = None) -> None:
-    handlers = []
+def log_debug(msg: str, log_file: str) -> None:
+    """
+    Log a debug message to a file in the format:
+    [YYYY-MM-DD HH:MM:SS] <msg>
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{timestamp}] {msg}\n"
 
-    handlers.append(logging.StreamHandler())
-
-    if logfile:
-        handlers.append(logging.FileHandler(logfile, encoding="utf-8"))
-
-    logging.basicConfig(
-        level=logging.DEBUG if debug else logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        handlers=handlers,
-    )
-
-log = logging.getLogger("mesonconfig")
+    Path(log_file).parent.mkdir(parents=True, exist_ok=True)
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(line)
 
 # ---[ Version ]--- #
 def get_version() -> str:

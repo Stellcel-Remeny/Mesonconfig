@@ -165,7 +165,19 @@ def main():
     )
     debug.add_argument(
         "--verbose", action="store_true", default=False,
-        help="Display verbose status messages."
+        help="Display verbose status messages (dbg() function output)"
+    )
+    debug.add_argument(
+        "--log", action="store_true", default=False,
+        help="Enables logging dbg() messages to log_file."
+    )
+    debug.add_argument(
+        "--log-file", metavar="<file>", default="mesonconfig_debug.log",
+        help="Log all dbg() messages to this file."
+    )
+    debug.add_argument(
+        "--debug-timer", metavar="<seconds>", default=0.5, type=float,
+        help="Time in seconds to display dbg() messages."
     )
 
     # --- Other ---
@@ -256,7 +268,11 @@ def main():
         verbose=args.verbose,
         
         kconfig_file=args.kconfig_file,
-        output_file=args.output_file
+        output_file=args.output_file,
+
+        logging=args.log,
+        log_file=args.log_file,
+        debug_timer=args.debug_timer
     )
 
     # Run tui here.
