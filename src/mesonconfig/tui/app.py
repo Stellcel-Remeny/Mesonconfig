@@ -177,7 +177,12 @@ class MCfgApp(
             else:
                 self._esc_timer.stop()
                 self._reset_esc()
-                self._show_exit_dialog()
+
+                # Only show dialog if config changed
+                if self.kconfig.has_changes():
+                    self._show_exit_dialog()
+                else:
+                    self.exit()
 
     #  --[ Functions ]--  #
     def _get_status_path(self):

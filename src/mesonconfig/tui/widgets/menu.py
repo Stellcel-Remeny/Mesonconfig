@@ -90,7 +90,11 @@ class MenuDisplay(Static):
         if button_id == "btn_exit":
             if self.app._return_to_parent_menu():
                 return
-            self.app._show_exit_dialog()
+            # only show exit dialog if changes exist
+            if self.app.kconfig.has_changes():
+                self.app._show_exit_dialog()
+            else:
+                self.app.exit()
 
         elif button_id == "btn_select":
             self.handle_select()

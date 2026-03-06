@@ -76,6 +76,10 @@ class KConfig:
         self._validate_tree()
         self._apply_defaults()
 
+        self._initial_values = {
+            name: opt.value for name, opt in self._options_index.items()
+        }
+
     def _normalize_value(self, opt: KOption, raw: str) -> Union[bool, int, str]:
         raw = raw.strip()
 
@@ -539,6 +543,11 @@ class KConfig:
 
                 opt.value = self._normalize_value(opt, raw)
 
+        # update baseline snapshot
+        self._initial_values = {
+            name: opt.value for name, opt in self._options_index.items()
+        }
+
     def save_config(self, path: str, tool_name: str = "Diana", tool_version: str = "Burnwood") -> None:
         from datetime import datetime
         from textwrap import dedent
@@ -600,6 +609,12 @@ class KConfig:
 
         result = walk(self.entries, [])
         return result or []
+
+    def has_changes(self) -> bool:
+        for name, opt in self._options_index.items():
+            if self._initial_values.get(name) != opt.value:
+                return True
+        return False
 
     # ---[ Test ]--- #
     def dump(self, entries=None, depth=0) -> None:
