@@ -16,7 +16,7 @@ OK - Proper Help text (Overview And Option help text)
 OK - Add Help button to String Dialog + Improve text visibility colour scheme
 OK - Add Cancel button to Exit Dialog
 OK - Do not show confirm exit if no change took place
-- Rename existing local.conf to local.conf.old, on saving.
+OK - Rename existing local.conf to local.conf.old, on saving.
 - Load existing local.conf
 - Ask if you want to --configure or --reconfigure the project if <Yes> is selected in exit dialog
 - Support lists[] and dicts[] in KConfig output file

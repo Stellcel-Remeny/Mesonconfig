@@ -33,6 +33,7 @@ env/
 htmlcov/
 Config.in
 local.conf
+local.conf.old
 
 # =====================
 # Logs
