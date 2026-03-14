@@ -7,6 +7,10 @@
 # TODO: Add functionality for --build-meson-options flag
 
 # ---[ Libraries ]--- #
+# For nice traceback
+from rich.traceback import install
+install(show_locals=False)
+
 from mesonconfig.tui import app as tui
 from mesonconfig.tui import config as tui_config
 from mesonconfig import kconfig
@@ -275,15 +279,8 @@ def main():
         debug_timer=args.debug_timer
     )
 
-    # Run tui here.
-    try:        
-        tui.MCfgApp(config=config).run()
-     
-    except Exception as e:
-        import traceback
-        print("Oops; An UNexpected error! :(")
-        traceback.print_exc()
-        print(" ) Figure out the error.")
+    # Run TUI.
+    tui.MCfgApp(config=config).run()
 
 if __name__ == "__main__":
     main()
