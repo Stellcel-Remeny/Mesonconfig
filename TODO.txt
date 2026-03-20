@@ -11,6 +11,7 @@ OK - Single quotes Not stripped in Menu in Textual TUI [Strip quote When loading
 OK - Compare to-be-written local.conf with existing local.conf. If no match (exclude whitespace, alignment, order, and commands), THEN show confirm exit dialog
 
 [Quality improvements]
+- Group by menu in generated local.conf and meson_options.txt (eg. "# --- Source configuration ---")
 - Expand $() variables with variables captured from Python
 OK - Window titles in sub windows
 - Transparent & Darken bkgd of scrollbars everywhere
