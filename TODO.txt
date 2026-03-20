@@ -28,7 +28,7 @@ OK - Load existing local.conf
 - Display [NEW!] in new options
 
 [Features]
-- Ability to generate meson_options.txt from KConfig file
+OK - Ability to generate meson_options.txt from KConfig file
 - Support project configuration other then [project options] (eg. [binaries], [built-in options]). Can show even if KConfig is absent.
 - Draggable windows
 - Add Exit (X) button on windows

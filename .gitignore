@@ -34,6 +34,7 @@ htmlcov/
 Config.in
 local.conf
 local.conf.old
+meson_options.txt
 
 # =====================
 # Logs
