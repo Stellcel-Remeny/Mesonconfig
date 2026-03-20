@@ -1,6 +1,6 @@
 [project]
 name = "mesonconfig"
-version = "0.1.0a1"
+version = "0.1.0a2"
 description = "Menuconfig-like Text user Interface for configuring Meson projects."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -25,5 +25,12 @@ classifiers = [
 [project.scripts]
 mesonconfig = "mesonconfig.cli:main"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.setuptools.package-data]
-mesonconfig = ["tui/README"]
+mesonconfig = ["tui/*"]
