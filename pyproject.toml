@@ -1,7 +1,3 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "mesonconfig"
 version = "0.1.0"
@@ -10,9 +6,12 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {file = "LICENSE.txt"}
 authors = [{name="Stellcel Remeny"}]
+
 dependencies = [
-    "textual>=0.50.0",
+    "textual>=0.50,<6.0",
+    "rich>=13.3,<15.0"
 ]
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -25,7 +24,3 @@ classifiers = [
 
 [project.scripts]
 mesonconfig = "mesonconfig.cli:main"
-
-[project.urls]
-Homepage = "https://github.com/Stellcel-Remeny/mesonconfig"
-Issues = "https://github.com/Stellcel-Remeny/mesonconfig/issues"
