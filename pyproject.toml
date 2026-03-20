@@ -24,3 +24,6 @@ classifiers = [
 
 [project.scripts]
 mesonconfig = "mesonconfig.cli:main"
+
+[tool.setuptools.package-data]
+mesonconfig = ["tui/README"]
