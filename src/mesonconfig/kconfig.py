@@ -20,6 +20,9 @@ from typing import List, Literal, Optional, Union
 from enum import Enum, auto
 from pathlib import Path
 
+# ---[ Prefixes ]--- #
+TYPE_PREFIXES = ("bool ", "string ", "int ")
+
 # ---[ Classes ]--- #
 class ParseContext(Enum):
     ROOT = auto()
@@ -38,6 +41,7 @@ class KOption(KEntry):
     opt_type: Literal["bool", "int", "string"]
     prompt: Optional[str] = None
     default: Optional[Union[bool, int, str]] = None
+    default_if: Optional[str] = None
     depends_on: Optional[str] = None
     help: str = ""
 
@@ -71,6 +75,7 @@ class KConfig:
         self.mainmenu: Optional[str] = None
         self.entries: list[KEntry] = []
         self._options_index: dict[str, KOption] = {}
+        self._depends_cache = {}
 
         self._build_tree(path)
         self._validate_tree()
@@ -141,27 +146,19 @@ class KConfig:
                         context_stack.pop()
 
             # ---- mainmenu ----
-            if stripped.startswith("mainmenu"):
+            if stripped.startswith("mainmenu "):
                 if self.mainmenu is not None:
-                    raise SyntaxError(
-                        f"Line {lineno}: Duplicate 'mainmenu'\n"
-                        f"  >> {line}\n"
-                        f"Expected: config | menu | comment"
-                    )
+                    self._syntax_error(lineno, line, "Duplicate 'mainmenu'")
                 
-                self.mainmenu = stripped.split('"', 1)[1].rsplit('"', 1)[0]
+                self.mainmenu = self._parse_text_after_keyword(stripped, "mainmenu")
                 continue
 
             # ---- menu ----
             if stripped.startswith("menu "):
                 if context_stack[-1] not in (ParseContext.ROOT, ParseContext.MENU):
-                    raise SyntaxError(
-                        f"Line {lineno}: unexpected 'menu'\n"
-                        f"  >> {line}\n"
-                        f"Expected: config | comment"
-                    )
+                    self._syntax_error(lineno, line, "unexpected 'menu'")
 
-                title = stripped.split('"', 1)[1].rsplit('"', 1)[0]
+                title = self._parse_text_after_keyword(stripped, "menu")
                 menu = KMenu(title=title)
                 stack[-1].append(menu)
                 stack.append(menu.entries)
@@ -177,11 +174,8 @@ class KConfig:
                     current_option = None
 
                 if context_stack[-1] != ParseContext.MENU:
-                    raise SyntaxError(
-                        f"Line {lineno}: unexpected 'endmenu'\n"
-                        f"  >> {line}\n"
-                        f"Expected: config | menu | comment"
-                    )
+                    self._syntax_error(lineno, line, "unexpected 'endmenu'")
+
                 stack.pop()
                 context_stack.pop()
 
@@ -194,7 +188,7 @@ class KConfig:
             # ---- choice ----
             if stripped == "choice":
                 if context_stack[-1] != ParseContext.MENU:
-                    raise SyntaxError(f"Line {lineno}: nested 'choice' is not allowed")
+                    self._syntax_error(lineno, line, "nested 'choice' is not allowed'")
 
                 current_choice = KChoice()
                 stack[-1].append(current_choice)
@@ -210,11 +204,8 @@ class KConfig:
                     current_option = None
 
                 if context_stack[-1] != ParseContext.CHOICE:
-                    raise SyntaxError(
-                        f"Line {lineno}: unexpected 'endchoice'\n"
-                        f"  >> {line}\n"
-                        f"Expected: config | menu | comment"
-                    )
+                    self._syntax_error(lineno, line, "unexpected 'endchoice'")
+
                 stack.pop()
                 context_stack.pop()
 
@@ -223,21 +214,23 @@ class KConfig:
                 continue
             
             # ---- comment ----
-            if stripped.startswith("comment"):
+            if stripped.startswith("comment "):
                 current_option = None
-                text = stripped.split(" ", 1)[1].strip('"')
+                text = self._parse_text_after_keyword(stripped, "comment")
                 stack[-1].append(KComment(text=text))
                 continue
 
             # ---- source ----
             if stripped.startswith("source "):
-                raw = stripped.split(" ", 1)[1].strip().strip('"')
+                #untested block of code
+                # TODO: Do testing...
+                raw = self._parse_text_after_keyword(stripped, "source")
 
                 # no variable expansion yet — keep it simple
                 src_path = base_dir / raw
 
                 if not src_path.is_file():
-                    raise FileNotFoundError(f"source file not found: {src_path}")
+                    self._file_not_found_error(lineno, line, src_path)
 
                 # recursively parse source file
                 sub_kc = KConfig(str(src_path))
@@ -253,19 +246,31 @@ class KConfig:
 
                 continue
 
+            # ---- option fields without config ----
+            if stripped.startswith(TYPE_PREFIXES):
+                if current_option is None:
+                    self._syntax_error(lineno, line, "option type without 'config NAME'")
+
             # ---- config ----
             if stripped.startswith("config "):
-                # leave OPTION context if already in one
+
+                # nested config is not allowed
                 if context_stack[-1] == ParseContext.OPTION:
-                    context_stack.pop()
+                    self._syntax_error(lineno, line, "nested 'config' is not allowed")
+
+                # previous option missing type
+                if current_option and current_option.prompt is None:
+                    self._syntax_error(lineno, line, f"option '{current_option.name}' missing type")
 
                 name = stripped.split()[1]
+
                 current_option = KOption(
                     name=name,
                     opt_type="bool",
                     filename=Path(path).name,
                     lineno=lineno
                 )
+
                 stack[-1].append(current_option)
                 self._options_index[name] = current_option
 
@@ -273,22 +278,28 @@ class KConfig:
                 continue
 
             # ---- depends ----
-            if stripped.startswith("depends on"):
+            if stripped.startswith("depends on "):
+                expr = stripped[11:].strip()
+
                 if current_option:
-                    current_option.depends_on = stripped.split("on", 1)[1].strip()
-                    continue
+                    current_option.depends_on = expr
+                elif current_menu:
+                    current_menu.depends_on = expr
+                elif current_choice:
+                    current_choice.depends_on = expr
+                else:
+                    self._syntax_error(lineno, line, "'depends on' outside valid context")
+                
+                continue
 
-                if current_menu:
-                    current_menu.depends_on = stripped.split("on", 1)[1].strip()
-                    continue
-
-                if current_choice:
-                    current_choice.depends_on = stripped.split("on", 1)[1].strip()
-                    continue
+            # ---- choice prompt ----
+            if current_choice and stripped.startswith("prompt "):
+                current_choice.prompt = self._parse_text_after_keyword(stripped, "prompt")
+                continue
 
             # ---- option fields ----
             if current_option:
-                if stripped.startswith(("bool ", "string ", "int ")):
+                if stripped.startswith(TYPE_PREFIXES):
                     typ, rest = stripped.split(" ", 1)
                     current_option.opt_type = typ
                     current_option.prompt = rest.strip('"')
@@ -296,19 +307,22 @@ class KConfig:
                 
                 # after handling type lines
                 if stripped.startswith("config ") and current_option and current_option.prompt is None:
-                    raise SyntaxError(
-                        f"Line {lineno}: Config '{current_option.name} is missing type'\n"
-                        f"  >> {line}\n"
-                        f"Expected: bool | string | int"
-                    )
+                    self._syntax_error(lineno, line, f"Config '{current_option.name}' is missing type")
 
                 if stripped.startswith("default "):
                     raw = stripped.split(" ", 1)[1]
-                    current_option.default = self._normalize_value(current_option, raw)
+
+                    if " if " in raw:
+                        val, cond = raw.split(" if ", 1)
+                        current_option.default = self._normalize_value(current_option, val.strip())
+                        current_option.default_if = cond.strip()
+                    else:
+                        current_option.default = self._normalize_value(current_option, raw.strip())
+
                     continue
 
-                if stripped.startswith("depends on"):
-                    current_option.depends_on = stripped.split("on", 1)[1].strip()
+                if stripped.startswith("depends on "):
+                    current_option.depends_on = stripped.split("on ", 1)[1].strip()
                     continue
 
                 if stripped == "help":
@@ -317,11 +331,24 @@ class KConfig:
                     current_option.help = ""
                     continue
 
+        # Close open option at EOF
+        if current_option and context_stack[-1] == ParseContext.OPTION:
+            context_stack.pop()
+
+        if len(context_stack) != 1:
+            self._syntax_error(lineno, line, "Unclosed block (missing endmenu or endchoice)")
+
     def _apply_defaults(self) -> None:
         """Apply parsed defaults into option.value so visibility can use them."""
         for opt in self._options_index.values():
-            if opt.default is not None:
-                # default was already normalized during parsing
+
+            if opt.default is None:
+                continue
+
+            if opt.default_if:
+                if self._eval_depends(opt.default_if):
+                    opt.value = opt.default
+            else:
                 opt.value = opt.default
 
     def _validate_tree(self) -> None:
@@ -366,6 +393,10 @@ class KConfig:
         walk(self.entries)
 
     def _eval_depends(self, expr: str) -> bool:
+
+        # Meant to speed up results but destroys dependency visibility
+        #if expr in self._depends_cache:
+        #    return self._depends_cache[expr]
         # --- Tokenize ---
         import re
         token_pattern = re.compile(r'(!|\(|\)|\w+|&&|\|\|)')
@@ -422,8 +453,11 @@ class KConfig:
             return resolve(tok)
 
         result = parse_expr()
+
         if pos != len(tokens):
             raise ValueError(f"Unexpected token remaining: {tokens[pos:]}")
+
+        self._depends_cache[expr] = result
         return result
 
     def _is_visible_local(self, opt: KOption, parent_depends: Optional[str] = None) -> bool:
@@ -440,6 +474,31 @@ class KConfig:
 
         return self._eval_depends(" and ".join(exprs))
     
+    def _parse_text_after_keyword(self, line: str, keyword: str) -> str:
+        # We strip quotes on text after keyword, if they exist.
+        text = line[len(keyword):].strip()
+
+        # remove trailing comments
+        if "#" in text:
+            text = text.split("#",1)[0].strip()
+
+        if text.startswith('"') and text.endswith('"'):
+            text = text[1:-1]
+
+        return text
+
+    def _syntax_error(self, lineno, line, msg):
+        raise SyntaxError(
+            f"Line {lineno}: {msg}\n"
+            f"  >> {line}"
+        )
+
+    def _file_not_found_error(self, lineno, line, path):
+        raise FileNotFoundError(
+            f"Line {lineno}: {path}\n"
+            f"  >> {line}"
+        )
+
     def find_option(self, name: str) -> Optional[KOption]:
         return self._options_index.get(name)
     
@@ -529,19 +588,24 @@ class KConfig:
     def load_config(self, path: str) -> None:
         with open(path, "r", encoding="utf-8") as f:
             for line in f:
+                # Strip whitespace
                 line = line.strip()
+
+                # Ignore empty or commented lines.
                 if not line or line.startswith("#"):
                     continue
 
+                # No equals means it is not a valid option assignment, skip it.
                 if "=" not in line:
                     continue
 
+                # Split into name and value and get rid of whitespace yet again
                 name, raw = line.split("=", 1)
-                opt = self._options_index.get(name)
-                if not opt:
-                    continue
+                name = name.strip()
+                raw = raw.strip()
 
-                opt.value = self._normalize_value(opt, raw)
+                # Now set the option.
+                self.set_option(name, raw)
 
         # update baseline snapshot
         self._initial_values = {
