@@ -95,7 +95,11 @@ class KConfig:
             return int(raw)
 
         if opt.opt_type == "string":
-            return raw.strip('"')
+            raw = raw.strip()
+            if (raw.startswith('"') and raw.endswith('"')) or \
+            (raw.startswith("'") and raw.endswith("'")):
+                raw = raw[1:-1]
+            return raw
 
         return raw
 
