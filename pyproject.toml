@@ -2,7 +2,7 @@
 name = "mesonconfig"
 version = "0.1.0a2"
 description = "Menuconfig-like Text user Interface for configuring Meson projects."
-readme = "README.md"
+readme = "readme.md"
 requires-python = ">=3.8"
 license = {file = "LICENSE.txt"}
 authors = [{name="Stellcel Remeny"}]
