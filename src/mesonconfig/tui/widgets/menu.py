@@ -91,7 +91,7 @@ class MenuDisplay(Static):
             if self.app._return_to_parent_menu():
                 return
             # only show exit dialog if changes exist
-            if self.app.kconfig.has_changes():
+            if self.app.kconfig.has_changes(self.app.config.output_file):
                 self.app._show_exit_dialog()
             else:
                 self.app.exit()

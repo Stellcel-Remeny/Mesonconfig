@@ -491,6 +491,49 @@ class KConfig:
 
         return text
 
+    def _load_config_dict(self, path: str) -> dict[str, str]:
+        result = {}
+
+        p = Path(path)
+        if not p.exists():
+            return result  # empty baseline
+
+        with open(p, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+
+                if not line or line.startswith("#"):
+                    continue
+
+                if "=" not in line:
+                    continue
+
+                name, raw = line.split("=", 1)
+                name = name.strip()
+                raw = raw.strip().strip("'\"")
+
+                result[name] = raw
+
+        return result
+
+    def _serialize_config_dict(self) -> dict[str, str]:
+        result = {}
+
+        for name, opt in self._options_index.items():
+            if opt.value is None:
+                continue
+
+            if opt.opt_type == "bool":
+                val = "true" if opt.value else "false"
+            elif opt.opt_type == "string":
+                val = str(opt.value)
+            else:
+                val = str(opt.value)
+
+            result[name] = val
+
+        return result
+
     def _syntax_error(self, lineno, line, msg):
         raise SyntaxError(
             f"Line {lineno}: {msg}\n"
@@ -689,11 +732,11 @@ class KConfig:
         result = walk(self.entries, [])
         return result or []
 
-    def has_changes(self) -> bool:
-        for name, opt in self._options_index.items():
-            if self._initial_values.get(name) != opt.value:
-                return True
-        return False
+    def has_changes(self, output_path: str) -> bool:
+        current = self._serialize_config_dict()
+        existing = self._load_config_dict(output_path)
+
+        return current != existing
 
     # ---[ Test ]--- #
     def dump(self, entries=None, depth=0) -> None:

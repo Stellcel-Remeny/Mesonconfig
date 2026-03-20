@@ -180,7 +180,7 @@ class MCfgApp(
         if self._return_to_parent_menu():
             return
 
-        # At root → show exit screen (show only if other windows aren't open)
+        # At root, show exit screen (show only if other windows aren't open)
         if not self.state.other_windows_are_open:
             if self._esc_timer is None:
                 self.set_secondary_status("Press ESC again to exit")
@@ -190,7 +190,7 @@ class MCfgApp(
                 self._reset_esc()
 
                 # Only show dialog if config changed
-                if self.kconfig.has_changes():
+                if self.kconfig.has_changes(self.config.output_file):
                     self._show_exit_dialog()
                 else:
                     self.exit()
