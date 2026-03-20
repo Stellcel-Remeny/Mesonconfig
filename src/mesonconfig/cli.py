@@ -4,7 +4,6 @@
 #
 
 # TODO: If .mesonconfig.ini exist, use that for settings (eg. BKGD color, verbose, Default file to use instead of KConfig)
-# TODO: Add functionality for --build-meson-options flag
 
 # ---[ Libraries ]--- #
 # For nice traceback
