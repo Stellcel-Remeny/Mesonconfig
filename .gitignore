@@ -35,6 +35,7 @@ Config.in
 local.conf
 local.conf.old
 meson_options.txt
+clean-test
 
 # =====================
 # Logs
