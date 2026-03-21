@@ -202,7 +202,11 @@ def main():
         "--override-minimum-size", action="store_true", default=False,
         help="Disables the terminal minimum size check."
     )
-    
+    runtime.add_argument(
+        "--disable-autoconfig", action="store_true", default=False,
+        help="Do not load existing settings of provided output file."
+    )
+
     # --- Debug --- #
     debug = parser.add_argument_group("Debug")
     debug.add_argument(
@@ -316,7 +320,9 @@ def main():
         window_color=args.window_color.lower(),
         window_background=args.window_background.lower(),
         
+        disable_autoconfig=args.disable_autoconfig,
         disable_minimum_size_check=args.override_minimum_size,
+
         verbose=args.verbose,
         
         kconfig_file=args.kconfig_file,

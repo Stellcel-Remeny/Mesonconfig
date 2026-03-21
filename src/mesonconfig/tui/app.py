@@ -77,15 +77,21 @@ class MCfgApp(
     def on_mount(self) -> None:
         super().on_mount()
 
-        # auto-load existing output file
-        if self.config.output_file:
+        # No output_file provided -> stop.
+        if not self.config.output_file:
+            raise ValueError("No output file provided.")
+
+        # auto-load existing output file unless disabled
+        if self.config.disable_autoconfig:
+            self.dbg("Autoload config is disabled, skipping loading existing config.")
+        else:
             try:
                 self.kconfig.load_config(path = self.config.output_file)
                 self.dbg(f"Loaded existing config: {self.config.output_file}")
             except FileNotFoundError:
                 self.dbg(f"No existing config found at: {self.config.output_file}")
             except Exception as e:
-                self.dbg(f"Error loading existing config {self.config.output_file}: {e}")
+                self.dbg(f"Error loading existing config {self.config.output_file}: {e}")            
 
         # Schedule render_entries to happen after current event loop
         self.call_later(self.render_entries)

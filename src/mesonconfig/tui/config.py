@@ -13,6 +13,7 @@ class AppConfig:
     window_color: str
     window_background: str
     
+    disable_autoconfig: bool
     disable_minimum_size_check: bool
     
     verbose: bool
