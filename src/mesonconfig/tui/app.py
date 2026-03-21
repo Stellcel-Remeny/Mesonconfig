@@ -310,10 +310,18 @@ class MCfgApp(
             elif entry.opt_type in ("string", "int"):
                 def callback(result):
                     if result is not None:
+                        index = self.main_list.list_view.index  # preserve focus
+
                         if entry.opt_type == "int":
-                            entry.value = int(result)
+                            try:
+                                entry.value = int(result)
+                            except ValueError:
+                                return  # or show error dialog
                         else:
                             entry.value = result
+
+                        self.render_entries()
+                        self.main_list.list_view.index = index
 
                 if entry.opt_type == "int":
                     self.open_modal(IntegerEditScreen(entry), callback)
