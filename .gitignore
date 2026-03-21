@@ -55,6 +55,7 @@ clean-test
 # =====================
 refer/
 secrets/
+CHANGELOG
 
 # =====================
 # OS junk
