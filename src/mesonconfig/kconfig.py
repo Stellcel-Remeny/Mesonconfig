@@ -491,6 +491,21 @@ class KConfig:
 
         return text
 
+    def _depends_satisfied(self, opt: KOption) -> bool:
+        exprs = []
+
+        parent = self.get_option_parents(opt.name)
+        if parent:
+            exprs.append(parent)
+
+        if opt.depends_on:
+            exprs.append(opt.depends_on)
+
+        if not exprs:
+            return True
+
+        return self._eval_depends(" and ".join(exprs))
+
     def _load_config_dict(self, path: str) -> dict[str, str]:
         result = {}
 
@@ -545,28 +560,28 @@ class KConfig:
 
                 self._write_entries(f, e.entries, depth + 1)
 
-                f.write(f"# end of {title}\n")
+                f.write(f"# end of {title}\n\n")
 
             elif isinstance(e, KOption):
                 if e.value is None:
-                    return
+                    continue
 
                 # TODO
                 #name = f"CONFIG_{e.name}"
                 name = e.name
 
                 if e.opt_type == "bool":
-                    if e.value:
-                        f.write(f"{name} = true\n")
-                    else:
-                        # f.write(f"# {name} is not set\n")
-                        f.write(f"{name} = false\n")
+                    f.write(f"{name} = {'true' if e.value else 'false'}\n")
 
                 elif e.opt_type == "string":
                     f.write(f"{name} = '{e.value}'\n")
 
                 elif e.opt_type == "int":
                     f.write(f"{name} = {e.value}\n")
+                    
+                else:
+                    # wtf?
+                    raise ValueError(f"Unknown option type: {e.opt_type}")
 
             elif isinstance(e, KComment):
                 f.write("#\n")
@@ -675,6 +690,31 @@ class KConfig:
 
         return visible
     
+    def enforce_dependencies(self) -> None:
+        """
+        Iteratively enforce dependency constraints until stable.
+        This avoids order-dependent inconsistencies.
+        """
+        changed = True
+
+        while changed:
+            changed = False
+
+            for opt in self._options_index.values():
+                if not self._depends_satisfied(opt):
+                    if opt.opt_type == "bool":
+                        new_val = False
+                    elif opt.opt_type == "string":
+                        new_val = ""
+                    elif opt.opt_type == "int":
+                        new_val = 0
+                    else:
+                        continue
+
+                    if opt.value != new_val:
+                        opt.value = new_val
+                        changed = True
+
     def load_config(self, path: str) -> None:
         with open(path, "r", encoding="utf-8") as f:
             for line in f:
@@ -706,6 +746,9 @@ class KConfig:
         from datetime import datetime
         from textwrap import dedent
 
+        # Handle dependencies
+        self.enforce_dependencies()
+
         target = Path(path)
         old_file = target.with_suffix(target.suffix + ".old")  # filename.old
 
@@ -725,7 +768,7 @@ class KConfig:
                 #\n
                 """))
 
-            f.write("[project options]")
+            f.write("[project options]\n")
             self._write_entries(f, self.entries)
 
     def set_option(self, name: str, value) -> None:
