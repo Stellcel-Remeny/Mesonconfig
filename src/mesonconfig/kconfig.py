@@ -560,7 +560,7 @@ class KConfig:
 
                 self._write_entries(f, e.entries, depth + 1)
 
-                f.write(f"# end of {title}\n\n")
+                f.write(f"# end of {title}\n")
 
             elif isinstance(e, KOption):
                 if e.value is None:
@@ -586,7 +586,7 @@ class KConfig:
             elif isinstance(e, KComment):
                 f.write("#\n")
                 f.write(f"# {e.text}\n")
-                f.write("#\n")
+                f.write("#\n\n")
 
             elif isinstance(e, KChoice):
                 # choices behave like flat groups
