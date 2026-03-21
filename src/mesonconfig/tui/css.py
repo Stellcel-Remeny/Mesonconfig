@@ -157,7 +157,8 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
         }}
     }}
     
-    #string_dialog {{
+    #string_dialog,
+    #integer_dialog {{
         width: 75;
         height: 10;
         border: {window_border} {window_fg};

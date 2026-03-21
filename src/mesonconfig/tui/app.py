@@ -12,6 +12,7 @@ from mesonconfig.tui.lifecycle.handlers import LifecycleHandlers
 from mesonconfig.tui.config import AppConfig, UIState
 from mesonconfig.tui.widgets.menu import MenuDisplay
 from mesonconfig.tui.widgets.string import StringEditScreen
+from mesonconfig.tui.widgets.integer import IntegerEditScreen
 from mesonconfig.tui.widgets.help import HelpScreen
 from mesonconfig.tui.widgets.exit import ConfirmExitScreen
 from mesonconfig.kconfig import KConfig, KMenu, KOption, KComment
@@ -313,9 +314,11 @@ class MCfgApp(
                             entry.value = int(result)
                         else:
                             entry.value = result
-                        self.render_entries()
 
-                self.open_modal(StringEditScreen(entry), callback)
+                if entry.opt_type == "int":
+                    self.open_modal(IntegerEditScreen(entry), callback)
+                else:
+                    self.open_modal(StringEditScreen(entry), callback)
                 
     def handle_help(self, index: int):
         if not self.current_entries:
