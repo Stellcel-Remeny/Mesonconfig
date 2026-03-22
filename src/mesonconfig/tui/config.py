@@ -8,22 +8,21 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class AppConfig:
     # Stuff in here should not be changed (unless user tells to)
-    background: str
-    window_border: str
-    window_color: str
-    window_background: str
+    kconfig_file: str = "KConfig"                   # Path to KConfig file to load
+    output_file: str = "local.conf"                 # File to write config to on save (and load from on start)
+
+    background: str = "blue"                        # Background of the whole application
+    window_border: str = "solid"                    # Border style of Windows
+    window_color: str = "black"                     # Foreground color of Windows
+    window_background: str = "lightgrey"            # Background color of Windows
     
-    disable_autoconfig: bool
-    disable_minimum_size_check: bool
+    disable_autoconfig: bool = False                # If true, the app will not load settings set in the output_file, using only defaults from KConfig file.
+    disable_minimum_size_check: bool = False        # If true, the app will not check for minimum terminal size and will not hide content if the terminal is too small.
     
-    verbose: bool
-    
-    kconfig_file: str
-    output_file: str
-    
-    logging: bool = False          # Enable/disable logging
-    log_file: str = None           # Path to logfile
-    debug_timer: float = 0.5       # Time to display dbg messages
+    verbose: bool = False                           # Enable/disable verbose mode
+    logging: bool = False                           # Enable/disable logging
+    log_file: str = None                            # Path to logfile
+    debug_timer: float = 0.5                        # Time to display dbg messages
 
 @dataclass
 class UIState:

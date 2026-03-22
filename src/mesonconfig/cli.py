@@ -18,88 +18,7 @@ from pathlib import Path
 import shutil, argparse
 
 # ---[ Functions ]--- #
-### Debug ###
-def _debug_display_menu_mockup(menu, kc, depth=0):
-    indent = "  " * depth
-
-    for entry in kc.get_visible_entries(menu.entries):
-        if isinstance(entry, kconfig.KMenu):
-            print(f"{indent}[+] {entry.title}")
-            _debug_display_menu_mockup(entry, kc, depth + 1)
-
-        elif isinstance(entry, kconfig.KChoice):
-            print(f"{indent}( ) choice")
-            for opt in entry.entries:
-                state = "*" if opt.value else " "
-                print(f"{indent}  ({state}) {opt.prompt}")
-
-        elif isinstance(entry, kconfig.KOption):
-            if entry.opt_type == "bool":
-                state = "[X]" if entry.value else "[ ]"
-                print(f"{indent}{state} {entry.prompt}")
-            else:
-                print(f"{indent}{entry.prompt}: {entry.value}")
-
-        elif isinstance(entry, kconfig.KComment):
-            print(f"{indent}# {entry.text}")
-
-def kconfig_demo_funct(kconfig_file: str) -> None:
-    kc = kconfig.KConfig(kconfig_file)
-    kc.dump()
-    print("===========")
-    print("Extra stuff")
-    print("Main menu:", kc.mainmenu)
-    print("Example stuff (bool_show_cmd)")
-    opt = kc.find_option("bool_show_cmd")
-    print("Name:", opt.name)
-    print("Type:", opt.opt_type)
-    print("Default:", opt.default)
-    print("Value:", opt.value)
-    print("Help:\n", opt.help)
-    
-    print("===========")
-    print("Now producing an edited file (.tmp.kconfig.dbg)")
-    print("Result should be bool_show_cmd=y SRC=\"mysource\" and val_grub-boot_timeout=10")
-    kc.set_option("bool_show_cmd", "y")
-    kc.set_option("SRC", "\"mysource\"")
-    kc.set_option("val_grub-boot_timeout", "10")
-    kc.set_option("hide_this_funct", "n")
-    kc.save_config(".tmp.kconfig.dbg")
-    
-    print("+++++++++")
-    print("That's that. Now opening menu.")
-    _debug_display_menu_mockup(kc, kc)
-    
-    print("\n++++\nDependency visibility:\n")
-    opt = kc.find_option("sys_dir_newroot_etc")
-    print("Sys_dir_newroot_etc depends on (own):", opt.depends_on)
-    parent_dep = kc.get_option_parents("sys_dir_newroot_etc")
-    print("Sys_dir_newroot_etc effective parent depends:", parent_dep)
-
-    opt_bool = kc.find_option("bool_move_root")
-    print("bool_move_root visible (own depends only):", kc.is_visible(opt_bool))
-
-    print("sys_dir_newroot_etc visible:", kc.is_visible(opt))
-    
-    print("\n++++\nNew Organized Checks\n")
-
-    def dump_visibility(opt_name):
-        opt = kc.find_option(opt_name)
-        parent = kc.get_option_parents(opt_name)
-        print(f"Option: {opt_name}")
-        print("  value:", opt.value)
-        print("  own depends:", opt.depends_on)
-        print("  parent depends:", parent)
-        print("  visible:", kc.is_visible(opt))
-
-    # Core tests
-    dump_visibility("hide_this_funct")
-    dump_visibility("bool_move_root")
-    dump_visibility("sys_dir_newroot_etc")
-    dump_visibility("sys_dir_apps")
-    dump_visibility("bool_show_cmd_out_err")
-
-#  --[ Build meson_options.txt ]--  #
+#  -- Build meson_options.txt --  #
 def build_meson_options(kconfig_file: kconfig.KConfig, output_path: str = "meson_options.txt") -> None:
     from datetime import datetime
     from textwrap import dedent
@@ -142,7 +61,7 @@ def build_meson_options(kconfig_file: kconfig.KConfig, output_path: str = "meson
                 f"description: '{desc}')\n"
             )
 
-#  --[ Custom help messages ]--  #
+#  -- Custom help messages --  #
 def custom_help(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
     if args.verbose:
         print("\nVerbosity makes the following changes:\n\n"
@@ -199,20 +118,16 @@ def main():
     # --- Behavior / runtime options ---
     runtime = parser.add_argument_group("Advanced")
     runtime.add_argument(
-        "--override-minimum-size", action="store_true", default=False,
-        help="Disables the terminal minimum size check."
-    )
-    runtime.add_argument(
         "--disable-autoconfig", action="store_true", default=False,
         help="Do not load existing settings of provided output file."
+    )
+    runtime.add_argument(
+        "--disable-minimum-size-check", action="store_true", default=False,
+        help="Disables the terminal minimum size check."
     )
 
     # --- Debug --- #
     debug = parser.add_argument_group("Debug")
-    debug.add_argument(
-        "--demo-kconfig", action="store_true", default=False,
-        help="KConfig demo test (MarkedRain KConfig needed)."
-    )
     debug.add_argument(
         "--verbose", action="store_true", default=False,
         help="Display verbose status messages (dbg() function output)"
@@ -253,21 +168,10 @@ def main():
 
     # --- Version flag check --- #
     if args.version:
-        if args.verbose and args.help:
-            """
-            import sys,time,zlib,base64
-            from . import pukcell as _
-            w=sys.stdout.write;s=time.sleep
-            d=zlib.decompress(base64.b64decode(_.DATA))
-            t=int(d.split(b"\n\n",1)[0].split()[2])/1e3
-            for _ in d.split(b"\x1f")[1:]:w("\033[H\033[J"+_.decode());s(t)
-            """
-            print("X_X")
-            return
         print("")
         print("Mesonconfig")
         print(core.get_version())
-        print("Repository: github.com/stellcel-remeny/mesonconfig")
+        print("Repository: https://github.com/Stellcel-Remeny/Mesonconfig")
         print("")        
         return
 
@@ -287,8 +191,9 @@ def main():
               f"the KConfig file by using --kconfig-file\n"
              )
         return 1
+    
     elif args.build_meson_options:
-        print(f"\nBuilding file 'meson_options.txt' using configuration from file '{args.kconfig_file}'...\n")
+        print(f"\nBuilding file 'meson_options.txt' using configuration from file '{args.kconfig_file}'...")
 
         kc = kconfig.KConfig(args.kconfig_file)
         build_meson_options(kc, "meson_options.txt")
@@ -298,36 +203,30 @@ def main():
     
 
     # --- Other immediate argument checks --- #
-    # Check if kconfig demo is enabled
-    if args.demo_kconfig:
-        kconfig_demo_funct(args.kconfig_file)
-        return
-    
     # Check if the terminal size is too small
     screen_size = shutil.get_terminal_size(fallback=(0, 0))
-    if (screen_size.columns < core.min_cols or screen_size.lines < core.min_rows) and not args.override_minimum_size:
+    if (screen_size.columns < core.min_cols or screen_size.lines < core.min_rows) and not args.disable_minimum_size_check:
         print(f"\nYour display is too small to run Mesonconfig!\n"
             f"It must be at least {core.min_rows} lines by {core.min_cols} columns.\n"
             f"Current size: {screen_size.columns}x{screen_size.lines}\n"
-            f"(use --override-minimum-size to bypass)\n"
+            f"(use --disable-minimum-size-check to bypass)\n"
         )
         return 1
 
     # Build config object for the app.
     config = tui_config.AppConfig(
+        kconfig_file=args.kconfig_file,
+        output_file=args.output_file,
+
         background=args.background.lower(),
         window_border=args.window_border.lower(),
         window_color=args.window_color.lower(),
         window_background=args.window_background.lower(),
         
         disable_autoconfig=args.disable_autoconfig,
-        disable_minimum_size_check=args.override_minimum_size,
+        disable_minimum_size_check=args.disable_minimum_size_check,
 
         verbose=args.verbose,
-        
-        kconfig_file=args.kconfig_file,
-        output_file=args.output_file,
-
         logging=args.log,
         log_file=args.log_file,
         debug_timer=args.debug_timer
