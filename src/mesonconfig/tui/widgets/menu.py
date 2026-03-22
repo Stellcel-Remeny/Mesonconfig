@@ -123,10 +123,10 @@ class MenuDisplay(Static):
         self.app.handle_help(index)
 
     def handle_save(self):
-        self.app.dbg("Save pressed")
+        self.app.handle_save_dialog()
 
     def handle_load(self):
-        self.app.dbg("Load pressed")
+        self.app.handle_load_dialog()
 
     def update_items(self, items: list[str]) -> None:
         self.items = items

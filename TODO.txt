@@ -9,9 +9,10 @@ OK - Scrollable functionality in Help window
     Example case: Make sure that if bool1 is False, and when bool2 depends on bool1, then bool2 must also be False.
 OK - Single quotes Not stripped in Menu in Textual TUI [Strip quote When loading file, because quotes get added onto local.conf successively]
 OK - Compare to-be-written local.conf with existing local.conf. If no match (exclude whitespace, alignment, order, and commands), THEN show confirm exit dialog
+- When an option depending upon another option is shown, take its value from the defaults (Config.in) instead of local.conf, as when saving local.conf, we saved unset variables with False, 0, and "", even though user did not change it.
 
 [Quality improvements]
-- Group by menu in generated local.conf and meson_options.txt (eg. "# --- Source configuration ---")
+OK - Group by menu in generated local.conf and meson_options.txt (eg. "# --- Source configuration ---")
 - Expand $() variables with variables captured from Python
 OK - Window titles in sub windows
 - Transparent & Darken bkgd of scrollbars everywhere
@@ -25,11 +26,12 @@ OK - Load existing local.conf
 - Ask if you want to --configure or --reconfigure the project if <Yes> is selected in exit dialog
 - Support lists[] and dicts[] in KConfig output file
 - Support Choice variables + UI for them + KConfig updated output code
-- Add code for <Load> and <Save> buttons in TUI
+OK - Add code for <Load> and <Save> buttons in TUI
 - Display [NEW!] in new options
 
 [Features]
 OK - Ability to generate meson_options.txt from KConfig file
+- Add --add-config-prefix (which adds CONFIG_ to all the options)
 - Support project configuration other then [project options] (eg. [binaries], [built-in options]). Can show even if KConfig is absent.
 - Draggable windows
 - Add Exit (X) button on windows

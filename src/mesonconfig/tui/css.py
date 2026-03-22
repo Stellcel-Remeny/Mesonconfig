@@ -156,18 +156,11 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
             width: auto;
         }}
     }}
-    
-    #string_dialog,
-    #integer_dialog {{
-        width: 75;
-        height: 10;
-        border: {window_border} {window_fg};
-        border-title-align: center;
-    }}
 
     #input_wrapper {{
         border: {window_border} {window_fg};
         margin: 0 1 1 1;
+        height: 3;
     }}
 
     #value_input {{
@@ -176,6 +169,26 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
         padding: 0 0;
         height: 1;
         color: {window_fg};
+    }}
+
+    #string_dialog,
+    #integer_dialog {{
+        width: 75;
+        height: 10;
+        border: {window_border} {window_fg};
+        border-title-align: center;
+    }}
+
+    #save_dialog,
+    #load_dialog {{
+        width: 55;
+        height: 11;
+        border: {window_border} {window_fg};
+        border-title-align: center;
+    }}
+
+    #load_dialog #input_wrapper {{
+        margin: 0 1 0 1;
     }}
 
     #exit_dialog {{

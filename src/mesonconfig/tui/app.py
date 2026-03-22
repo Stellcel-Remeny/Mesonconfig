@@ -15,6 +15,8 @@ from mesonconfig.tui.widgets.string import StringEditScreen
 from mesonconfig.tui.widgets.integer import IntegerEditScreen
 from mesonconfig.tui.widgets.help import HelpScreen
 from mesonconfig.tui.widgets.exit import ConfirmExitScreen
+from mesonconfig.tui.widgets.save import SaveScreen
+from mesonconfig.tui.widgets.load import LoadScreen
 from mesonconfig.kconfig import KConfig, KMenu, KOption, KComment
 # textual tui libs
 from textual.app import App
@@ -400,6 +402,82 @@ class MCfgApp(
                 )
             )
     
+    def handle_save_dialog(self):
+        def callback(result):
+            if not result:
+                return
+
+            path = Path(result)
+
+            # --- validation ---
+            if path.exists() and path.is_dir():
+                self.set_secondary_status(f"Path is a directory: {path}")
+                return
+
+            try:
+                from dataclasses import replace
+                self.kconfig.save_config(
+                    path=path,
+                    tool_name="Mesonconfig",
+                    tool_version=core.get_version()
+                )
+
+                # Set output file path to saved filename
+                self.config = replace(self.config, output_file=str(path))
+                self.set_secondary_status(f"Updated immutable config; Configuration written to: {path}")
+
+                # Update application title
+                self.header(f"{self.config.output_file} - Mesonconfig {core.get_version()}")
+
+            except Exception as e:
+                self.set_secondary_status(f"Save failed: {e}")
+
+        self.open_modal(SaveScreen(default_value=self.config.output_file), callback)
+
+    def handle_load_dialog(self):
+        def callback(result):
+            if not result:
+                return
+
+            path = Path(result)
+
+            # --- validation ---
+            if not path.exists():
+                self.set_secondary_status(f"File does not exist: {path}")
+                return
+
+            if path.is_dir():
+                self.set_secondary_status(f"Path is a directory: {path}")
+                return
+
+            if not path.is_file():
+                self.set_secondary_status(f"Path is not a file: {path}")
+                return
+
+            try:
+                from dataclasses import replace
+                # Reset to defaults
+                self.kconfig.reset_to_defaults()
+
+                # Load file
+                self.kconfig.load_config(path=path)
+
+                # Reset UI state
+                self.menu_stack.clear()
+                self.render_entries()
+
+                # Set output file path to loaded filename
+                self.config = replace(self.config, output_file=str(path))
+                self.set_secondary_status(f"Updated immutable config; Loaded configuration: {path}")
+
+                # Update application title
+                self.header(f"{self.config.output_file} - Mesonconfig {core.get_version()}")
+
+            except Exception as e:
+                self.set_secondary_status(f"Load failed: {e}")
+
+        self.open_modal(LoadScreen(default_value=self.config.output_file), callback)
+
     def open_modal(self, screen, callback=None):
         self.main_list.display = False
 
