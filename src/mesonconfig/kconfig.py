@@ -814,6 +814,22 @@ class KConfig:
 
         return current != existing
 
+    def reset_to_defaults(self) -> None:
+        """
+        Reset all option values to their default state.
+        """
+        # Clear all values first
+        for opt in self._options_index.values():
+            opt.value = None
+
+        # Reapply defaults
+        self._apply_defaults()
+
+        # Reset baseline snapshot
+        self._initial_values = {
+            name: opt.value for name, opt in self._options_index.items()
+        }
+
     # ---[ Test ]--- #
     def dump(self, entries=None, depth=0) -> None:
         if entries is None:
