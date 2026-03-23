@@ -3,8 +3,6 @@
 # 2026, Remeny
 #
 
-# TODO: If .mesonconfig.ini exist, use that for settings (eg. BKGD color, verbose, Default file to use instead of KConfig)
-
 # ---[ Libraries ]--- #
 # For nice traceback
 from rich.traceback import install
@@ -15,7 +13,7 @@ from mesonconfig.tui import config as tui_config
 from mesonconfig import kconfig
 from mesonconfig import core
 from pathlib import Path
-import shutil, argparse
+import shutil, argparse, configparser, sys, os
 
 # ---[ Functions ]--- #
 #  -- Build meson_options.txt --  #
@@ -72,6 +70,174 @@ def custom_help(parser: argparse.ArgumentParser, args: argparse.Namespace) -> No
         parser.print_help()
         print(f"\n For more information on a flag, use --help with that flag. (not available for every flag)")
 
+#  -- For loading mesonconfig Configuration file --  #
+"""
+#### Mesonconfig Settings INI hierarchy (top is prioritized):
+
+           CLI flags (--option)
+                ▲
+        Project config (.mesonconfig.ini)
+                ▲
+   Global config (resolved in this order)
+        1. $XDG_CONFIG_HOME/mesonconfig/config.ini
+        2. ~/.config/mesonconfig/config.ini
+        3. ~/.mesonconfig.ini (legacy)
+                ▲
+        argparse defaults (built-in)
+
+#### END
+"""
+def get_global_config_path() -> Path | None:
+    candidates: list[Path] = []
+
+    # XDG_CONFIG_HOME
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    if xdg:
+        candidates.append(Path(xdg) / "mesonconfig" / "config.ini")
+
+    # ~/.config fallback
+    candidates.append(Path.home() / ".config" / "mesonconfig" / "config.ini")
+
+    # legacy fallback
+    candidates.append(Path.home() / ".mesonconfig.ini")
+
+    for path in candidates:
+        if path.is_file():
+            return path
+
+    return None
+
+def merge_ini_configs(global_cfg: dict, local_cfg: dict) -> dict:
+    """
+    Merge normalized configs:
+    local overrides global
+    """
+    result = {sec: dict(kv) for sec, kv in global_cfg.items()}
+
+    for section, kv in local_cfg.items():
+        if section not in result:
+            result[section] = {}
+
+        result[section].update(kv)
+
+    return result
+
+def load_ini_settings(path: str) -> configparser.ConfigParser:
+    cfg = configparser.ConfigParser()
+
+    # Make keys case-insensitive but normalized
+    cfg.optionxform = str.lower
+
+    if not Path(path).is_file():
+        return cfg  # empty config
+
+    try:
+        cfg.read(path)
+    except Exception as e:
+        print(f"Warning: Failed to read config file '{path}': {e}")
+
+    return cfg
+
+def normalize_key(k: str) -> str:
+    # normalize keys: foo_bar -> foo-bar, case-insensitive
+    return k.replace("_", "-").lower()
+
+def normalize_section(s: str) -> str:
+    return s.lower()
+
+def build_normalized_ini(cfg: configparser.ConfigParser) -> dict[str, dict[str, str]]:
+    result: dict[str, dict[str, str]] = {}
+
+    for section in cfg.sections():
+        sec_norm = normalize_section(section)
+
+        if sec_norm not in result:
+            result[sec_norm] = {}
+
+        seen_keys: dict[str, str] = {}
+
+        for key, value in cfg[section].items():
+            key_norm = normalize_key(key)
+
+            if key_norm in seen_keys:
+                print(
+                    f"Warning: Duplicate key '{key}' conflicts with "
+                    f"'{seen_keys[key_norm]}' in section [{section}]"
+                )
+
+            seen_keys[key_norm] = key
+            result[sec_norm][key_norm] = value
+
+    return result
+
+def get_explicit_args() -> set[str]:
+    result: set[str] = set()
+
+    argv = sys.argv[1:]
+    i = 0
+
+    while i < len(argv):
+        arg = argv[i]
+
+        if arg.startswith("--"):
+            key = arg.split("=", 1)[0]
+            result.add(key)
+
+            # Skip next token if it's a value (not another flag)
+            if "=" not in arg and i + 1 < len(argv) and not argv[i + 1].startswith("-"):
+                i += 1
+
+        i += 1
+
+    return result
+
+def validate_ini_keys(norm_cfg: dict[str, dict[str, str]], args):
+    valid_keys = {normalize_key(k) for k in vars(args).keys()}
+
+    for section, kv in norm_cfg.items():
+        for key in kv:
+            if key not in valid_keys:
+                print(f"Warning: Unknown option '{key}' in section [{section}]")
+
+def get_section(cfg: configparser.ConfigParser, section: str):
+    """Return section mapping case-insensitively."""
+    target = section.lower()
+
+    for sec in cfg.sections():
+        if sec.lower() == target:
+            return cfg[sec]
+
+    return None
+
+def resolve(norm_cfg, args, explicit_args, section: str, name: str, default):
+    cli_flag = f"--{name.replace('_', '-')}"
+    key = normalize_key(name)
+    sec = normalize_section(section)
+
+    # 1. CLI (highest priority)
+    if cli_flag in explicit_args:
+        return getattr(args, name)
+
+    # 2. INI
+    if sec in norm_cfg and key in norm_cfg[sec]:
+        raw = norm_cfg[sec][key]
+
+        try:
+            if isinstance(default, bool):
+                return raw.lower() in ("1", "true", "yes", "on")
+            elif isinstance(default, int):
+                return int(raw)
+            elif isinstance(default, float):
+                return float(raw)
+            else:
+                return raw
+        except Exception:
+            print(f"Warning: Invalid value '{raw}' for '{key}' in [{section}]")
+            return default
+
+    # 3. Default
+    return default
+
 # ---[ Entry point ]--- #
 def main():
     # Argument checking.
@@ -94,6 +260,14 @@ def main():
     io.add_argument(
         "--output-file", metavar="<file>", default="local.conf",
         help="Path to the output file to generate Local configuration."
+    )
+    io.add_argument(
+        "--mesonconfig-settings", metavar="<file>", default=".mesonconfig.ini",
+        help="Load Mesonconfig settings from this file."
+    )
+    io.add_argument(
+        "--no-global-config", action="store_true", default=False,
+        help="Do not load user-level configuration (~/.config/mesonconfig/config.ini)."
     )
 
     # --- Appearance options --- #
@@ -180,22 +354,54 @@ def main():
         custom_help(parser, args)
         return
 
+    # --- Config builder --- #
+    global_cfg = {}
+    global_path = None
+
+    if not args.no_global_config:
+        global_path = get_global_config_path()
+        if global_path:
+            global_cfg = build_normalized_ini(load_ini_settings(global_path))
+
+    local_cfg = build_normalized_ini(load_ini_settings(args.mesonconfig_settings))
+
+    # Merge: local overrides global
+    cfg = merge_ini_configs(global_cfg, local_cfg)
+
+    # Validate after merge
+    validate_ini_keys(cfg, args)
+
+    explicit_args = get_explicit_args()
+
+    # Optional debug info
+    if args.verbose:
+        if global_path:
+            print(f"[dbg] Loaded global config: {global_path}")
+        else:
+            print("[dbg] No global config found")
+
+        print(f"[dbg] Loaded project config: {args.mesonconfig_settings}")
+
+    # Resolve critical fields early
+    resolved_kconfig = resolve(cfg, args, explicit_args, "Configuration", "kconfig_file", args.kconfig_file)
+    resolved_output = resolve(cfg, args, explicit_args, "Configuration", "output_file", args.output_file)
+
     # --- Conditions before TUI --- #
     # If positional was provided and --kconfig-file was not explicitly used
-    if args.kconfig_positional and args.kconfig_file == "KConfig":
-        args.kconfig_file = args.kconfig_positional
+    if args.kconfig_positional and resolved_kconfig == "KConfig":
+        resolved_kconfig = args.kconfig_positional
     
-    if not Path(args.kconfig_file).is_file():
-        print(f"\nThe file '{args.kconfig_file}' does not exist.\n"
-              f"Please create '{args.kconfig_file}', or supply correct path to\n"
+    if not Path(resolved_kconfig).is_file():
+        print(f"\nThe file '{resolved_kconfig}' does not exist.\n"
+              f"Please create '{resolved_kconfig}', or supply correct path to\n"
               f"the KConfig file by using --kconfig-file\n"
              )
         return 1
     
     elif args.build_meson_options:
-        print(f"\nBuilding file 'meson_options.txt' using configuration from file '{args.kconfig_file}'...")
+        print(f"\nBuilding file 'meson_options.txt' using configuration from file '{resolved_kconfig}'...")
 
-        kc = kconfig.KConfig(args.kconfig_file)
+        kc = kconfig.KConfig(resolved_kconfig)
         build_meson_options(kc, "meson_options.txt")
 
         print("Done.\n")
@@ -215,21 +421,25 @@ def main():
 
     # Build config object for the app.
     config = tui_config.AppConfig(
-        kconfig_file=args.kconfig_file,
-        output_file=args.output_file,
+        # --- Configuration ---
+        kconfig_file=resolved_kconfig,
+        output_file=resolved_output,
 
-        background=args.background.lower(),
-        window_border=args.window_border.lower(),
-        window_color=args.window_color.lower(),
-        window_background=args.window_background.lower(),
-        
-        disable_autoconfig=args.disable_autoconfig,
-        disable_minimum_size_check=args.disable_minimum_size_check,
+        # --- Appearance ---
+        background=resolve(cfg, args, explicit_args, "Appearance", "background", args.background).lower(),
+        window_border=resolve(cfg, args, explicit_args, "Appearance", "window_border", args.window_border).lower(),
+        window_color=resolve(cfg, args, explicit_args, "Appearance", "window_color", args.window_color).lower(),
+        window_background=resolve(cfg, args, explicit_args, "Appearance", "window_background", args.window_background).lower(),
 
-        verbose=args.verbose,
-        logging=args.log,
-        log_file=args.log_file,
-        debug_timer=args.debug_timer
+        # --- Advanced ---
+        disable_autoconfig=resolve(cfg, args, explicit_args, "Advanced", "disable_autoconfig", args.disable_autoconfig),
+        disable_minimum_size_check=resolve(cfg, args, explicit_args, "Advanced", "disable_minimum_size_check", args.disable_minimum_size_check),
+
+        # --- Debug ---
+        verbose=resolve(cfg, args, explicit_args, "Debug", "verbose", args.verbose),
+        logging=resolve(cfg, args, explicit_args, "Debug", "log", args.log),
+        log_file=resolve(cfg, args, explicit_args, "Debug", "log_file", args.log_file),
+        debug_timer=resolve(cfg, args, explicit_args, "Debug", "debug_timer", args.debug_timer),
     )
 
     # Run TUI.

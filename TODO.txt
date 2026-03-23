@@ -32,10 +32,10 @@ OK - Add code for <Load> and <Save> buttons in TUI
 [Features]
 OK - Ability to generate meson_options.txt from KConfig file
 - Add --add-config-prefix (which adds CONFIG_ to all the options)
-- Support project configuration other then [project options] (eg. [binaries], [built-in options]). Can show even if KConfig is absent.
+- Support project configuration other than [project options] (eg. [binaries], [built-in options]). Can show even if KConfig is absent.
 - Draggable windows
 - Add Exit (X) button on windows
-- Load mesonconfig.ini, which has settings (eg. window_color=, output_file=)
+OK - Load mesonconfig.ini, which has settings (eg. window_color=, output_file=)
 - Open searchbox by pressing '/' anywhere
 
 [Eyecandy]
