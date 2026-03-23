@@ -12,6 +12,7 @@ OK - Compare to-be-written local.conf with existing local.conf. If no match (exc
 - When an option depending upon another option is shown, take its value from the defaults (Config.in) instead of local.conf, as when saving local.conf, we saved unset variables with False, 0, and "", even though user did not change it.
 - "Terminal too small" message in TUI: All sub windows closes, returning to Menu. Do not close them.
 [VIP] - KChoice Does NOT properly work (if Depends) (Problem could be with Depends)
+- Hightling fix after tabbing (Highlight does not keep position at Button highlight & menu highlight)
 
 [Quality improvements]
 OK - Group by menu in generated local.conf and meson_options.txt (eg. "# --- Source configuration ---")
@@ -44,6 +45,7 @@ OK - Load mesonconfig.ini, which has settings (eg. window_color=, output_file=)
 - Shadows for windows
 - 3D Borders
 - Theme presests
+- Update README.md
 
 [Other]
 - Code refactoring
