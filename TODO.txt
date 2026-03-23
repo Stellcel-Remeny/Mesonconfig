@@ -10,6 +10,8 @@ OK - Scrollable functionality in Help window
 OK - Single quotes Not stripped in Menu in Textual TUI [Strip quote When loading file, because quotes get added onto local.conf successively]
 OK - Compare to-be-written local.conf with existing local.conf. If no match (exclude whitespace, alignment, order, and commands), THEN show confirm exit dialog
 - When an option depending upon another option is shown, take its value from the defaults (Config.in) instead of local.conf, as when saving local.conf, we saved unset variables with False, 0, and "", even though user did not change it.
+- "Terminal too small" message in TUI: All sub windows closes, returning to Menu. Do not close them.
+[VIP] - KChoice Does NOT properly work (if Depends) (Problem could be with Depends)
 
 [Quality improvements]
 OK - Group by menu in generated local.conf and meson_options.txt (eg. "# --- Source configuration ---")
@@ -25,7 +27,7 @@ OK - Rename existing local.conf to local.conf.old, on saving.
 OK - Load existing local.conf
 - Ask if you want to --configure or --reconfigure the project if <Yes> is selected in exit dialog
 - Support lists[] and dicts[] in KConfig output file
-- Support Choice variables + UI for them + KConfig updated output code
+OK - Support Choice variables + UI for them + KConfig updated output code
 OK - Add code for <Load> and <Save> buttons in TUI
 - Display [NEW!] in new options
 

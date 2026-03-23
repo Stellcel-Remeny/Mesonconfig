@@ -17,7 +17,7 @@ from mesonconfig.tui.widgets.help import HelpScreen
 from mesonconfig.tui.widgets.exit import ConfirmExitScreen
 from mesonconfig.tui.widgets.save import SaveScreen
 from mesonconfig.tui.widgets.load import LoadScreen
-from mesonconfig.kconfig import KConfig, KMenu, KOption, KComment
+from mesonconfig.kconfig import KConfig, KMenu, KOption, KComment, KChoice
 # textual tui libs
 from textual.app import App
 from textual.widgets import Label
@@ -181,6 +181,7 @@ class MCfgApp(
             if isinstance(entry, KOption):
                 if entry.opt_type == "bool":
                     entry.value = not entry.value
+                    self.kconfig.enforce_dependencies()
                     self.render_entries()
                     # Keep focus on current item
                     self.main_list.list_view.index = index
@@ -256,27 +257,47 @@ class MCfgApp(
         current_menu = self.menu_stack[-1]
         entries = self.kconfig.get_visible_entries(current_menu.entries)
         # fallback to parent if empty (prevents hang)
-        if not entries and len(self.menu_stack) > 1:
-            current_menu = self.menu_stack[-2]
-            entries = self.kconfig.get_visible_entries(current_menu.entries)
+        #if not entries and len(self.menu_stack) > 1:
+        #    current_menu = self.menu_stack[-2]
+        #    entries = self.kconfig.get_visible_entries(current_menu.entries)
+        if not entries:
+            return []
         return entries
 
     def render_entries(self):
-        self.current_entries = self.get_current_entries()
+        self.current_entries = [
+            e for e in self.get_current_entries()
+            if not isinstance(e, KOption) or self.kconfig.is_visible(e)
+        ]
         display_items = []
         for e in self.current_entries:
             if isinstance(e, KMenu):
-                display_items.append(f"{e.title}  --->")
+                display_items.append(f"    {e.title}  --->")
+
             elif isinstance(e, KOption):
                 if e.opt_type == "bool":
                     val = "[*]" if e.value else "[ ]"
                     display_items.append(f"{val} {e.prompt}")
+
                 elif e.opt_type == "string":
                     display_items.append(f"({e.value or ''}) {e.prompt}")
+
                 elif e.opt_type == "int":
                     display_items.append(f"({e.value or 0}) {e.prompt}")
+
             elif isinstance(e, KComment):
                 display_items.append(f"# {e.text}")
+            
+            elif isinstance(e, KChoice):
+                selected = ""
+                for opt in e.entries:
+                    if opt.value:
+                        selected = opt.prompt
+                        break
+
+                display_items.append(
+                    f"    {e.prompt} ({selected})  --->"
+                )
 
         prev_index = getattr(self.main_list.list_view, "index", 0)
         self.main_list.update_items(display_items)
@@ -313,6 +334,7 @@ class MCfgApp(
 
             if entry.opt_type == "bool":
                 entry.value = not bool(entry.value)
+                self.kconfig.enforce_dependencies()
                 self.render_entries()
 
             elif entry.opt_type in ("string", "int"):
@@ -328,6 +350,7 @@ class MCfgApp(
                         else:
                             entry.value = result
 
+                        self.kconfig.enforce_dependencies()
                         self.render_entries()
                         self.main_list.list_view.index = index
 
@@ -335,6 +358,19 @@ class MCfgApp(
                     self.open_modal(IntegerEditScreen(entry), callback)
                 else:
                     self.open_modal(StringEditScreen(entry), callback)
+
+        elif isinstance(entry, KChoice):
+            def callback(result):
+                if result is None:
+                    return
+
+                index = self.main_list.list_view.index
+                self.kconfig.enforce_dependencies()
+                self.render_entries()
+                self.main_list.list_view.index = index
+
+            from mesonconfig.tui.widgets.choice import ChoiceScreen
+            self.open_modal(ChoiceScreen(entry), callback)
                 
     def handle_help(self, index: int):
         if not self.current_entries:
@@ -401,6 +437,48 @@ class MCfgApp(
                     markdown=True
                 )
             )
+
+        elif isinstance(entry, KChoice):
+            prompt = entry.prompt or "Unnamed choice"
+            filename = getattr(entry, "filename", "Config.in")
+            lineno = getattr(entry, "lineno", "?")
+
+            depends = entry.depends_on or "None"
+
+            if entry.depends_on:
+                try:
+                    val = "y" if self.kconfig._eval_depends(entry.depends_on) else "n"
+                    depends = f"{entry.depends_on} [={val}]"
+                except Exception:
+                    pass
+
+            # Build location path
+            location = []
+            for m in self.menu_stack:
+                location.append(m.title)
+
+            location.append(prompt)
+
+            location_str = "\n".join(
+                f"{' ' * (5 + i*2)}-> {p}" for i, p in enumerate(location)
+            )
+
+            content = (
+                "There is no help available for this option.\n"
+                f"Defined at {filename}:{lineno}\n"
+                f"  Prompt: {prompt}\n"
+                f"  Depends on: {depends}\n"
+                f"  Location:\n"
+                f"{location_str}\n"
+            )
+
+            self.open_modal(
+                HelpScreen(
+                    title=prompt,
+                    content=content,
+                    markdown=False
+                )
+            )
     
     def handle_save_dialog(self):
         def callback(result):
@@ -416,6 +494,7 @@ class MCfgApp(
 
             try:
                 from dataclasses import replace
+                # Save the configuration
                 self.kconfig.save_config(
                     path=path,
                     tool_name="Mesonconfig",

@@ -627,10 +627,18 @@ class KConfig:
                         res = walk(e.entries, combined)
                         if res is not None:
                             return res
+                        
                 elif isinstance(e, KChoice):
-                    res = walk(e.entries, parent_depends)
-                    if res is not None:
-                        return res
+                    combined = e.depends_on
+                    if parent_depends and combined:
+                        combined = f"{parent_depends} and {combined}"
+                    elif parent_depends:
+                        combined = parent_depends
+
+                    if combined is None or self._eval_depends(combined):
+                        res = walk(e.entries, combined)
+                        if res is not None:
+                            return res
             return None
 
         return bool(walk(self.entries))
@@ -683,7 +691,16 @@ class KConfig:
                     e.visible_entries = self.get_visible_entries(e.entries, combined)
 
             elif isinstance(e, KChoice):
-                visible.append(e)
+                combined = e.depends_on
+                if parent_depends and combined:
+                    combined = f"{parent_depends} and {combined}"
+                elif parent_depends:
+                    combined = parent_depends
+
+                if combined is None or self._eval_depends(combined):
+                    visible.append(e)
+                    # propagate visibility to children
+                    e.visible_entries = self.get_visible_entries(e.entries, combined)
 
             elif isinstance(e, KComment):
                 visible.append(e)

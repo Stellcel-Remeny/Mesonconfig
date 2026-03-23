@@ -182,13 +182,52 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
     #save_dialog,
     #load_dialog {{
         width: 55;
-        height: 11;
+        height: 15;
         border: {window_border} {window_fg};
         border-title-align: center;
     }}
 
     #load_dialog #input_wrapper {{
         margin: 0 1 0 1;
+    }}
+
+    #choice_dialog {{
+        width: 65;
+        height: 15;
+        border: {window_border} {window_fg};
+        border-title-align: center;
+    }}
+    
+    #choice_list_wrapper {{
+        border: {window_border} {window_fg};
+        margin: 0 1 0 1;
+        height: 1fr;
+        padding-left: 10;
+        padding-right: 10;
+    }}
+
+    #choice_list {{
+        background: transparent;
+        height: 100%;
+        width: 100%;
+    }}
+
+    #choice_list ListItem {{
+        height: 1;
+    }}
+
+    #choice_list ListItem Label {{
+        width: 100%;
+        content-align: left top;
+        color: {window_fg};
+    }}
+
+    #choice_list ListItem.-highlight {{
+        background: {highlight};
+    }}
+
+    #choice_list ListItem.-highlight Label {{
+        color: white;
     }}
 
     #exit_dialog {{
