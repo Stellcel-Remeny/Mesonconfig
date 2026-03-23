@@ -182,7 +182,7 @@ def _modal_windows_css(highlight: str, window_border: str, window_bg: str, windo
     #save_dialog,
     #load_dialog {{
         width: 55;
-        height: 15;
+        height: 11;
         border: {window_border} {window_fg};
         border-title-align: center;
     }}
